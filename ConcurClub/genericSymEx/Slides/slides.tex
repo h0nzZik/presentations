@@ -1,0 +1,151 @@
+\documentclass[11pt]{beamer}
+\usetheme{Boadilla}
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usetikzlibrary{automata,arrows,calc,positioning}
+\usepackage{graphicx}
+\usepackage{pgfpages}
+\usepackage{minted}
+
+\author{Jan Tušil}
+
+\title{A Generic Framework for Symbolic Execution: a Coinductive Approach}
+%\setbeamercovered{transparent} 
+%\setbeamertemplate{navigation symbols}{} 
+%\logo{} 
+%\institute{} 
+%\date{} 
+%\subject{} 
+
+%\setbeameroption{show notes}
+%\setbeameroption{show notes on second screen=right}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\tableofcontents
+\end{frame}
+
+\section{Intro}
+
+\begin{frame}[fragile=singleslide]{MojeIntro}
+
+\begin{minted}[linenos=true]{cpp}
+int x,y;
+x = get();
+y = -x;
+y = -y;
+assert(x == y);
+\end{minted}
+
+%\pause 
+
+Může assert selhat?
+
+\end{frame}
+
+\begin{frame}{Operační sémantika}
+\begin{equation*}
+OpSem : Program \rightarrow TransitionSystem
+\end{equation*}
+\pause
+\begin{figure}
+\begin{tikzpicture}%[roundnode/.style={circle, draw=black!60, fill=black!5, very thick, minimum size=7mm}]
+%Nodes
+%\node[]      (fst)                              {\textbullet};
+%\node[]      (midcircle) [above right = of fst] {\textbullet};
+\node[]      (fst)                              {\textbullet};
+\node[]      (n11) [above right = of fst] {\textbullet};
+\node[]      (n12) [right = of n11] {\textbullet};
+\node[]      (n13) [right = of n12] {\textbullet};
+\node[]      (n21) [below = of n11] {\textbullet};
+\node[]      (n22) [right = of n21] {\textbullet};
+\node[]      (n23) [right = of n22] {\textbullet};
+\node[]      (n31) [below = of n21] {\textbullet};
+\node[]      (n32) [right = of n31] {\textbullet};
+\node[]      (n33) [right = of n32] {\textbullet};
+\node[]      (n01) [above = of n11] {\textbullet};
+\node[]      (n02) [right = of n01] {\textbullet};
+\node[]      (n03) [right = of n02] {\textbullet};
+\node[]      (ok) [right = of n23] {ok};
+\node[]      (fail) [right = of n33] {fail};
+
+\draw[-latex] (fst) to[] node[left]{$1$}(n01);
+\draw[-latex] (n01) to[] node[]{}(n02);
+\draw[-latex] (n02) to[] node[]{}(n03);
+\draw[-latex] (n03) to[] node[]{}(ok);
+\draw[-latex] (fst) to[] node[above]{$2$}(n11);
+\draw[-latex] (n11) to[] node[]{}(n12);
+\draw[-latex] (n12) to[] node[]{}(n13);
+\draw[-latex] (n13) to[] node[]{}(ok);
+\draw[-latex] (fst) to[] node[above]{$2^{31}$}(n21);
+\draw[-latex] (n21) to[] node[]{}(n22);
+\draw[-latex] (n22) to[] node[]{}(n23);
+\draw[-latex] (n23) to[] node[]{}(ok);
+\draw[-latex] (fst) to[] node[right]{$- 2^{31}$}(n31);
+\draw[-latex] (n31) to[] node[]{}(n32);
+\draw[-latex] (n32) to[] node[]{}(n33);
+\draw[-latex] (n33) to[] node[]{}(fail);
+\path (n11) -- node[auto=false]{\vdots} (n21);
+\path (n12) -- node[auto=false]{\vdots} (n22);
+\path (n13) -- node[auto=false]{\vdots} (n23);
+%\draw[-latex] (fst) to[] node[]{}(n11);
+
+%\node[]      (midcircle) [above right = of fst] {\textbullet};
+%\node[roundnode]      (uppercircle)       [above=of midcircle] {1};
+%\node[roundnode]      (rightcircle)       [right=of midcircle] {4};
+%\node[roundnode]      (lowercircle)       [below=of midcircle] {3};
+%
+%%Edges out of 1
+%\draw[->] (uppercircle.east) to[bend left=20] node[above right]{-}(rightcircle.north);
+%\draw[->] (uppercircle.-135) to[bend right=40] node[right]{-}(lowercircle.135);
+%\draw[->] (uppercircle.135) to[out=135,in=180] ($(uppercircle) +(0,3em)$)node[above]{+} to[out=0, in =45] (uppercircle.45);
+%
+%%2 Edges out of 2
+%\draw[->] (midcircle.east) --node[above]{+} (rightcircle.west);
+%\draw[->] (midcircle.80) to[out=80,in=135] ($(midcircle) +(2em,2em)$)node[right]{+}  to[out=-45, in =10] (midcircle.10);
+%\draw[->] (midcircle.south) -- (lowercircle.north);
+%\draw[->] (midcircle.north) -- (uppercircle.south);
+%
+%%Edges out of 3
+%\draw[->] (lowercircle.150) to[bend left=80]node[left]{+}(uppercircle.-150);
+%\draw[->] (lowercircle.east) to[bend right=20]node[below right]{-}(rightcircle.south);
+%\draw[->] (lowercircle.-135)  to[out=-135,in=180] ($(lowercircle) +(0,-3em)$)node[below]{+} to[out=0, in =-45](lowercircle.-45);
+%
+
+%Edges out of 4
+%\draw[->] (rightcircle.-135) to[bend left=20] node[below]{-} (midcircle.-45);
+
+\end{tikzpicture}
+\end{figure}
+\end{frame}
+
+\section{Logics}
+
+
+\begin{frame}{FOL}
+\begin{equation}
+\phi ::= \top \mid p(t_1,\ldots,t_n) \mid \neg \phi \mid \phi \land \phi \mid \left( \exists X \right) \phi
+\end{equation}
+\end{frame}
+
+\begin{frame}{ML}
+
+Signature ML: $ 123 $
+
+%\pause
+\begin{equation}
+\varphi ::= \pi \mid \top \mid p(t_1,\ldots,t_n) \mid \neg \varphi \mid \varphi \land \varphi \mid \left( \exists V \right) \varphi
+\end{equation}
+\end{frame}
+
+\end{document}
