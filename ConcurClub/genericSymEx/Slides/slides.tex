@@ -28,6 +28,14 @@
 %\setbeameroption{show notes}
 %\setbeameroption{show notes on second screen=right}
 
+\newtheorem{principle}{Princip}
+\newtheorem{dfn}{Definice}
+\newtheorem{pozn}{Poznámka}
+
+
+\DeclareMathOperator{\SortOf}{SortOf}
+
+
 \begin{document}
 
 \begin{frame}
@@ -147,8 +155,6 @@ Ukázka
 Ukázka
 \end{frame}
 
-\newtheorem{principle}{Princip}
-
 \begin{frame}{Symbolická exekuce}
 
 \begin{principle}[Pokrytí]
@@ -167,21 +173,105 @@ Každému konečnému symbolickému běhu odpovídá nějaký konkrétní běh.
 
 \section{Jazyk, logika, sémantika}
 
+\subsection{Logika konfigurací}
 
-\begin{frame}{FOL}
-\begin{equation}
-\phi ::= \top \mid p(t_1,\ldots,t_n) \mid \neg \phi \mid \phi \land \phi \mid \left( \exists X \right) \phi
-\end{equation}
+\begin{frame}[fragile]{Signatura}
+
+\begin{pozn}[Sortování]
+Říkáme-li o množině X, že je Y-sortovaná, máme tím na mysli, že existuje funkce $\SortOf : X \rightarrow Y $.
+\end{pozn}
+
+\pause
+
+\begin{dfn}
+\textit{Vícedruhová algebraická signatura} je tvořena množinou sortů $S$ spolu s $S^* \times S$-sortovanou množinou $\Sigma$ funkčních symbolů. Symbol $T_{\Sigma}$ označuje $\Sigma$-algebru uzavřených termů, $T_{\Sigma , s}$ množinu termů sortu $s$, $T_{\Sigma}\left( Var \right)$ volnou $\Sigma$-algebru termů s proměnnými.
+\end{dfn}
+
+\pause
+
+\begin{figure}
+\begin{lstlisting}
+Plant ::= favouriteFood(Animal)
+Animal ::= mother(Animal) | father(Animal)
+\end{lstlisting}
+\end{figure}
+
+\pause
+
+Příklad.
+
 \end{frame}
 
-\begin{frame}{Matching Logic - logika konfigurací}
+% Jako příklad - různé termy, i otevřené
 
-Signature ML: $ 123 $
+\begin{frame}{Vícedruhová FOL}
+
+\begin{dfn}
+Signatura provořádové logiky $\left( \Sigma, \Pi \right)$ je tvořena algebraickou signaturou $\Sigma$ a $S^*$-sortovanou množinou predikátových symbolů $\Pi$.
+\end{dfn}
+
+\pause
+
+\begin{dfn}[Formule]
+Množina formulí nad signaturou $\left( \Sigma, \Pi \right)$ je definována:
+\begin{equation*}
+\phi ::= \top \mid p(t_1,\ldots,t_n) \mid \neg \phi \mid \phi \land \phi \mid \left( \exists X \right) \phi
+\end{equation*}
+kde $p$ označuje predikátové symboly, $X$ podmnožiny proměnných a $t_i$ $\Sigma$-termy s volnými proměnnými.
+\end{dfn}
+
+\pause
+Příklad (StaršíNež).
+\pause
+Předpokládáme predikát rovnosti.
+
+\end{frame}
+
+\newcommand{\folSignature}{$\left( \Sigma, \Pi \right)$}
+
+%TODO konvence oznacovani sortovych podmnozin
+\begin{frame}{Modely}
+Analogie s realizacemi jazyků v MA007.
+\begin{dfn}
+Model signatury \folSignature je $\Sigma$-algebra $\mathcal{T}$ spolu s realizací $\mathcal{T}_p \subseteq \mathcal{T}_{s_1} \times \cdots \times \mathcal{T}_{s_n} $ pro každý predikátový symbol $p \in \Pi_{s_1 \ldots s_n}$.
+\end{dfn}
+
+\pause
+Zvířecí příklad.
+\pause
+
+\begin{dfn}[Relace splnitelnosti]
+Pro \folSignature -formuli $\phi$, \folSignature -model $\mathcal{T}$ a valuaci $\rho : Var \rightarrow \mathcal{T}$ definujeme relaci splnitelnosti $\rho \models \phi$ jako obvykle. (Valuaci $\rho$ přirozeně rozšiřujeme na morfismus $\Sigma$-algeber $\rho : T_{\Sigma}\left( Var \right) \rightarrow \mathcal{T}$.)
+\end{dfn}
+\pause
+Zkusme to na tabuli.
+\pause
+Příklad.
+
+
+%
+%Splnitelnost pro fixovaný model.
+%\pause
+%
+%\begin{pozn}[Substituce]
+%Substituce je funkce $\sigma : Var \rightarrow T_{\Sigma}\left( Var \right)$
+%\end{pozn}
+
+\end{frame}
+%
+%%TODO rovnost
+
+
+\begin{frame}{Matching Logic - logika konfigurací}
 
 %\pause
 \begin{equation}
 \varphi ::= \pi \mid \top \mid p(t_1,\ldots,t_n) \mid \neg \varphi \mid \varphi \land \varphi \mid \left( \exists V \right) \varphi
 \end{equation}
 \end{frame}
+
+%TODO sorty pro identifikátory apod.
+
+\subsection{Logika běhů}
 
 \end{document}
