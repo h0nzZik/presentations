@@ -9,8 +9,10 @@
 \usepackage{tikz}
 \usetikzlibrary{automata,arrows,calc,positioning}
 \usepackage{graphicx}
+\usepackage[tight]{k}
+\usepackage{listings}
 \usepackage{pgfpages}
-\usepackage{minted}
+%\usepackage{minted}
 
 \author{Jan Tušil}
 
@@ -40,14 +42,13 @@
 
 \begin{frame}[fragile=singleslide]{MojeIntro}
 
-\begin{minted}[linenos=true]{cpp}
+\begin{lstlisting}
 int x,y;
 x = get();
 y = -x;
 y = -y;
 assert(x == y);
-\end{minted}
-
+\end{lstlisting}
 %\pause 
 
 Může assert selhat?
@@ -88,7 +89,7 @@ OpSem : Program \rightarrow TransitionSystem
 \draw[-latex] (n11) to[] node[]{}(n12);
 \draw[-latex] (n12) to[] node[]{}(n13);
 \draw[-latex] (n13) to[] node[]{}(ok);
-\draw[-latex] (fst) to[] node[above]{$2^{31}$}(n21);
+\draw[-latex] (fst) to[] node[above]{$2^{31} - 1$}(n21);
 \draw[-latex] (n21) to[] node[]{}(n22);
 \draw[-latex] (n22) to[] node[]{}(n23);
 \draw[-latex] (n23) to[] node[]{}(ok);
@@ -130,7 +131,41 @@ OpSem : Program \rightarrow TransitionSystem
 \end{figure}
 \end{frame}
 
-\section{Logics}
+\begin{frame}{Konfigurace}
+\begin{multline*}
+\mall{blue}{k}{x=get(); \kra y=-x; \kra y=-y; \kra assert(x == y);} \mall{green}{env}{x=0,y=0}
+\end{multline*}
+\pause
+Ukázka
+\end{frame}
+
+\begin{frame}{Symbolická Konfigurace}
+\begin{multline*}
+\mall{blue}{k}{y=-x; \kra y=-y; \kra assert(x == y);} \mall{green}{env}{x=X,y=0}
+\end{multline*}
+\pause
+Ukázka
+\end{frame}
+
+\newtheorem{principle}{Princip}
+
+\begin{frame}{Symbolická exekuce}
+
+\begin{principle}[Pokrytí]
+Každému (potenciálně nekonečnému) konkrétnímu běhu odpovídá nějaký symbolický běh.
+\end{principle}
+
+\pause
+
+\begin{principle}[Přesnost]
+Každému konečnému symbolickému běhu odpovídá nějaký konkrétní běh.
+\end{principle}
+
+\pause Nekonečné běhy - koindukce
+
+\end{frame}
+
+\section{Jazyk, logika, sémantika}
 
 
 \begin{frame}{FOL}
@@ -139,7 +174,7 @@ OpSem : Program \rightarrow TransitionSystem
 \end{equation}
 \end{frame}
 
-\begin{frame}{ML}
+\begin{frame}{Matching Logic - logika konfigurací}
 
 Signature ML: $ 123 $
 
