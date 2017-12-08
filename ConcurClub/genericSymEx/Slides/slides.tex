@@ -7,6 +7,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{tikz}
+\usepackage{stmaryrd}
 \usetikzlibrary{automata,arrows,calc,positioning}
 \usepackage{graphicx}
 \usepackage[tight]{k}
@@ -36,7 +37,9 @@
 \DeclareMathOperator{\SortOf}{SortOf}
 
 \newcommand{\Var}{\mathit{Var}}
-
+\newcommand{\folSignature}{\ensuremath{\left( \Sigma, \Pi \right)}}
+\newcommand{\mlSignature}{\ensuremath{\left( \Sigma, \Pi, \mathit{Cfg} \right)}}
+\newcommand{\Tcfg}{\ensuremath{\mathcal{T}_{\mathit{Cfg}}}}
 
 \begin{document}
 
@@ -229,8 +232,6 @@ Předpokládáme predikát rovnosti.
 
 \end{frame}
 
-\newcommand{\folSignature}{$\left( \Sigma, \Pi \right)$}
-
 %TODO konvence oznacovani sortovych podmnozin
 \begin{frame}{Modely}
 Analogie s realizacemi jazyků v MA007.
@@ -307,8 +308,9 @@ Skoro jako algebry termů. Ukázka.
 
 \begin{frame}{Matching Logic - logika konfigurací}
 
+
 \begin{dfn}[Signatura ML]
-Signatura Matching Logiky (ML) je trojice $\Phi = \left( \Sigma, \Pi, \mathit{Cfg} \right)$,
+Signatura Matching Logiky (ML) je trojice $\Phi = \mlSignature$,
 kde $\left( \Sigma, \Pi \right)$ je prvořádová signatura a $\mathit{Cfg} \in \Sigma$ je speciální sort pro konfigurace.
 \end{dfn}
 
@@ -319,22 +321,64 @@ Množina formulí ML nad signaturou $\Phi$ je definována:
 \begin{equation*}
 \varphi ::= \pi \mid \top \mid p(t_1,\ldots,t_n) \mid \neg \varphi \mid \varphi \land \varphi \mid \left( \exists V \right) \varphi
 \end{equation*}
-kde $\pi$ může být z $T_{\Sigma, \mathit{Cfg}}\left( Var \right)$ a ostatní podobně jako u formulí FOL.
+kde $\pi$ může být z $T_{\Sigma, \mathit{Cfg}}\left( Var \right)$ (nazývaná základní pattern) a ostatní podobně jako u formulí FOL.
 \end{dfn}
 
 \pause
 Jaký je vztah mezi formulemi ML a FOL?
 \pause
 Příklad.
+\pause
+Příklad s dělením.
 
 \end{frame}
+
+\begin{frame}{Model ML}
+Jak to bude?
+\pause
+\begin{dfn}
+Model ML signatury $\mlSignature$ je prvořádový $\folSignature$-model $\mathcal{T}$. Konfigurace jsou prvky $\Tcfg$.
+\end{dfn}
+
+\pause
+
+\begin{dfn}[Relace splnitelnosti]
+Relace $\models$ je vztah mezi dvojicemi $\left( \gamma, \rho \right)$, kde $\gamma \in \Tcfg$
+a $\rho : \Var \rightarrow \mathcal{T}$. Pro základní patterny $\pi$ je definováno $\gamma, \rho \models \pi$ právě když $\gamma = \phi \rho$. Jinak běžná definice. Pokud $\varphi$ je ML formule, pak $\llbracket \varphi \rrbracket$ označuje jí odpovídající množinu konkrétních konfigurací.
+\end{dfn}
+\pause
+Co přesně znamená $\llbracket \varphi \rrbracket$ ?
+\pause
+Příklad.
+\end{frame}
+
+\begin{frame}{ML to FOL}
+Jak zaklejeme ML formuli do FOL?
+\end{frame}
+
+
+\begin{frame}{Big picture}
+Umíme popisovat syntaxi jazyka a strukturu konfigurací.
+\pause
+Ale co sémantika a dynamické vlastnosti?
+\end{frame}
+
 
 %TODO sorty pro identifikátory apod.
 
 \subsection{Logika běhů}
 
+\begin{frame}{Reachability Logic}
+
+\begin{dfn}
+Formule RL je dvojice formulí ML $\varphi_1 \Rightarrow \varphi_2$.
+\end{dfn}
+
+\end{frame}
+
 
 \section{Závěr}
+
 
 \begin{frame}[fragile]{Motivace}
 
