@@ -376,6 +376,11 @@ Jak zaklejeme ML formuli do FOL?
 
 \begin{frame}{Big picture}
 Umíme popisovat syntaxi jazyka a strukturu konfigurací.
+\begin{itemize}
+\pause \item Jak by mohly vypadat běhy?
+\pause \item Jak by mohly vypadat symbolické běhy?
+\end{itemize}
+
 \pause
 Ale co sémantika a dynamické vlastnosti?
 \end{frame}
@@ -395,6 +400,31 @@ Příklad: terminace.
 
 \end{frame}
 
+
+\begin{frame}{Definice jazyka}
+
+\begin{dfn}
+Definice jazyka je trojice $\mathcal{L} = \left( \Phi, \mathcal{T}, \mathcal{S} \right)$, kde
+\begin{itemize}
+\pause \item $\Phi$ je signatura ML $\mlSignature$
+\pause \item $\mathcal{T}$ je $\Phi$-model.
+\pause \item $\mathcal{S}$ je množina RL formulí \pause definující operační sémantiku
+\end{itemize}
+\end{dfn}
+\pause
+Příklad. (Klidně opsat.)
+\end{frame}
+
+\begin{frame}{Cesty výpočtu (execution paths)}
+Na tabuli
+\end{frame}
+
+\begin{frame}{Následníci ML formule}
+\begin{equation*}
+\Delta_{\mathcal{S}}\left( \varphi \right) =
+\lbrace \left( \exists \mathsf{var} \left( \varphi_l , \varphi_r \right) \right) \left( \varphi_1 \land \varphi \right)^{=?} \land \varphi_r \mid \varphi_l \Rightarrow \varphi_r \in \mathcal{S} \rbrace
+\end{equation*}
+\end{frame}
 
 \section{Závěr}
 
