@@ -35,6 +35,8 @@
 
 \DeclareMathOperator{\SortOf}{SortOf}
 
+\newcommand{\Var}{\mathit{Var}}
+
 
 \begin{document}
 
@@ -184,7 +186,7 @@ Každému konečnému symbolickému běhu odpovídá nějaký konkrétní běh.
 \pause
 
 \begin{dfn}
-\textit{Vícedruhová algebraická signatura} je tvořena množinou sortů $S$ spolu s $S^* \times S$-sortovanou množinou $\Sigma$ funkčních symbolů. Symbol $T_{\Sigma}$ označuje $\Sigma$-algebru uzavřených termů, $T_{\Sigma , s}$ množinu termů sortu $s$, $T_{\Sigma}\left( Var \right)$ volnou $\Sigma$-algebru termů s proměnnými.
+\textit{Vícedruhová algebraická signatura} je tvořena množinou sortů $S$ spolu s $S^* \times S$-sortovanou množinou $\Sigma$ funkčních symbolů. Symbol $T_{\Sigma}$ označuje $\Sigma$-algebru uzavřených termů, $T_{\Sigma , s}$ množinu termů sortu $s$, $T_{\Sigma}\left( \Var \right)$ volnou $\Sigma$-algebru termů s proměnnými.
 \end{dfn}
 
 \pause
@@ -241,13 +243,19 @@ Zvířecí příklad.
 \pause
 
 \begin{dfn}[Relace splnitelnosti]
-Pro \folSignature -formuli $\phi$, \folSignature -model $\mathcal{T}$ a valuaci $\rho : Var \rightarrow \mathcal{T}$ definujeme relaci splnitelnosti $\rho \models \phi$ jako obvykle. (Valuaci $\rho$ přirozeně rozšiřujeme na morfismus $\Sigma$-algeber $\rho : T_{\Sigma}\left( Var \right) \rightarrow \mathcal{T}$.)
+Pro \folSignature -formuli $\phi$, \folSignature -model $\mathcal{T}$ a valuaci $\rho : \Var \rightarrow \mathcal{T}$ definujeme relaci splnitelnosti $\rho \models \phi$ jako obvykle. (Valuaci $\rho$ přirozeně rozšiřujeme na morfismus $\Sigma$-algeber $\rho : T_{\Sigma}\left( Var \right) \rightarrow \mathcal{T}$.)
 \end{dfn}
 \pause
+
 Zkusme to na tabuli.
+
 \pause
+
 Příklad.
 
+\pause
+
+Formule $\phi$ je validní (v $\mathcal{T}$), když je splněná všemi valuacemi. Označujeme: $\models \phi$.
 
 %
 %Splnitelnost pro fixovaný model.
@@ -261,17 +269,118 @@ Příklad.
 %
 %%TODO rovnost
 
+% Zvířátka stačila.
+\begin{frame}
+Co bylo na začátku? \pause Program, sémantika, přechodový systém, konfigurace.
+\pause
+\begin{multline*}
+\mall{black}{cfg}{\mall{blue}{k}{x=5; \kra y=-x; } \mall{green}{env}{x \mapsto 0,y \mapsto 0}}
+\end{multline*}
+\pause
+Tohle je nějaký term.
+\pause
+\begin{multline*}
+\mall{black}{cfg}{\mall{blue}{k}{X=I; \kra y=-x; } \mall{green}{env}{X \mapsto 0,y \mapsto 0}}
+\end{multline*}
+\pause
+Term s volnými proměnnými ($X$, $I$).
+\pause
+Můžeme popsat strukturu takovýchto termů?
+\pause
+Třeba sorty:
+$S = \lbrace \mathit{Cfg} , \mathit{Map}, \mathit{Stmt}, \mathit{Expr}, \mathit{Id}, \mathit{Int} \rbrace $
+\pause
+Symboly:
+\pause
+např. 
+\begin{equation*}
+\langle \langle \_ \rangle_{k} \langle \_ \rangle_{env} \rangle_{cfg} \in \Sigma_{\mathit{Stmt}, \mathit{Map}, \mathit{Cfg} }
+\end{equation*}
+\pause
+Mohli bychom použít vícedruhovou logiku prvního řádu k uvažování o konfiguracích?
+\pause
+Jak by vypadaly modely?
+\pause
+Skoro jako algebry termů. Ukázka.
+
+\end{frame}
 
 \begin{frame}{Matching Logic - logika konfigurací}
 
-%\pause
-\begin{equation}
+\begin{dfn}[Signatura ML]
+Signatura Matching Logiky (ML) je trojice $\Phi = \left( \Sigma, \Pi, \mathit{Cfg} \right)$,
+kde $\left( \Sigma, \Pi \right)$ je prvořádová signatura a $\mathit{Cfg} \in \Sigma$ je speciální sort pro konfigurace.
+\end{dfn}
+
+\pause
+
+\begin{dfn}
+Množina formulí ML nad signaturou $\Phi$ je definována:
+\begin{equation*}
 \varphi ::= \pi \mid \top \mid p(t_1,\ldots,t_n) \mid \neg \varphi \mid \varphi \land \varphi \mid \left( \exists V \right) \varphi
-\end{equation}
+\end{equation*}
+kde $\pi$ může být z $T_{\Sigma, \mathit{Cfg}}\left( Var \right)$ a ostatní podobně jako u formulí FOL.
+\end{dfn}
+
+\pause
+Jaký je vztah mezi formulemi ML a FOL?
+\pause
+Příklad.
+
 \end{frame}
 
 %TODO sorty pro identifikátory apod.
 
 \subsection{Logika běhů}
+
+
+\section{Závěr}
+
+\begin{frame}[fragile]{Motivace}
+
+\begin{lstlisting}
+int x,y;
+x = get();
+y = -x;
+y = -y;
+assert(x == y);
+\end{lstlisting}
+%\pause 
+
+Může assert selhat?
+
+\end{frame}
+
+
+\begin{frame}[fragile]{A co funkce?}
+\begin{lstlisting}
+int foo(int x) {
+  int y = -x;
+  y = -y;
+  return y;
+}
+// ...
+int x = get();
+assert(foo(x) == x);
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{A co šablony?}
+\begin{lstlisting}
+template < typename T >
+T foo(T x) {
+  T y = -x;
+  y = -y;
+  return y;
+}
+
+template < typename T >
+void check() {
+    T x = get<T>();
+    assert(foo(x) == x);
+}
+\end{lstlisting}
+\end{frame}
 
 \end{document}
