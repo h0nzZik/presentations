@@ -51,7 +51,24 @@
 \tableofcontents
 \end{frame}
 
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\AtBeginSubsection[]
+{
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
 \section{Intro}
+
 
 \begin{frame}[fragile=singleslide]{MojeIntro}
 
@@ -373,6 +390,8 @@ Ale co sémantika a dynamické vlastnosti?
 \begin{dfn}
 Formule RL je dvojice formulí ML $\varphi_1 \Rightarrow \varphi_2$.
 \end{dfn}
+\pause
+Příklad: terminace.
 
 \end{frame}
 
