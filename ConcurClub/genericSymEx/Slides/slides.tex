@@ -15,10 +15,10 @@
 \usepackage{pgfpages}
 %\usepackage{minted}
 
-\author{Jan Tušil}
+%\author{Jan Tušil}
 
-\title{A Generic Framework for Symbolic Execution}
-%\title{A Generic Framework for Symbolic Execution: a Coinductive Approach}
+%\title{A Generic Framework for Symbolic Execution}
+\title{A Generic Framework for Symbolic Execution: a Coinductive Approach}
 %\setbeamercovered{transparent} 
 %\setbeamertemplate{navigation symbols}{} 
 %\logo{} 
@@ -415,8 +415,17 @@ Definice jazyka je trojice $\mathcal{L} = \left( \Phi, \mathcal{T}, \mathcal{S} 
 Příklad. (Klidně opsat.)
 \end{frame}
 
+\begin{frame}{Přepisování}
+\begin{pozn}
+$\gamma_1 \Rightarrow_{\mathcal{S}^{\rho}} \gamma_2$ pokud existuje $\varphi_1 \Rightarrow \varphi_2 \in \mathcal{S}$ a přejmenování proměnných $\sigma : \Var \rightarrow \Var$ t.ž. $\left( \gamma_i , \sigma \rho \ \right) \models \varphi_i$
+\end{pozn}
+\pause
+Příklad.
+\end{frame}
+
 \begin{frame}{Cesty výpočtu (execution paths)}
-Na tabuli
+Na tabuli.
+\pause Úplná cesta výpočtu.
 \end{frame}
 
 \begin{frame}{Následníci ML formule}
@@ -424,6 +433,10 @@ Na tabuli
 \Delta_{\mathcal{S}}\left( \varphi \right) =
 \lbrace \left( \exists \mathsf{var} \left( \varphi_l , \varphi_r \right) \right) \left( \varphi_1 \land \varphi \right)^{=?} \land \varphi_r \mid \varphi_l \Rightarrow \varphi_r \in \mathcal{S} \rbrace
 \end{equation*}
+\end{frame}
+
+\begin{frame}{Symbolic Execution Path}
+Na tabuli.
 \end{frame}
 
 \section{Závěr}
