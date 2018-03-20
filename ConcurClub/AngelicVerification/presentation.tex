@@ -37,12 +37,13 @@
 %\floatname{program}{Program}
 
 \lstset{
-numbers=left, 
-numberstyle=\small, 
-numbersep=8pt, 
-frame = single, 
+basicstyle=\footnotesize\ttfamily,
+%numbers=left, 
+%numberstyle=\small, 
+%numbersep=4pt, 
+%frame = single, 
 %language=Pascal, 
-framexleftmargin=15pt
+%framexleftmargin=15pt
 }
 
 \begin{document}
@@ -59,8 +60,16 @@ framexleftmargin=15pt
 
 % Obsah: motivace, maso, porovnání.
 \begin{frame}
-\tableofcontents
+\tableofcontents[pausesections]
 \end{frame}
+
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Osnova}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
 
 % Otevřené a uzavřené programy, plané poplachy
 \section{Motivace}
@@ -150,21 +159,114 @@ void FooBar() {
 \end{itemize}
 
 \begin{dfn}[Problém angelické verifikace]
-Pro daný assert, existuje rozumná specifikace nad neznámými hodnotami taková,
+Pro daný assert, existuje přijatelná specifikace nad neznámými hodnotami taková,
 že daný assert platí?
 \end{dfn}
 
-\end{frame}
-
-\section{Detaily}
-
-
-\begin{frame}{Přijatelná specifikace}
 Chceme, aby přijatelná specifikace byla:
 \begin{itemize}
 \item stručná
 \item shovívavá
 \end{itemize}
+
+\end{frame}
+
+\section{Detaily}
+
+% Uvažujme jednoduchý jazyk (který je prý podmnožinou jazyka Boogie).
+% Program je tvořen posloupností základních bloků,
+% přičemž blok se skládá z posloupnosti příkazů a je ukončen
+% seznamem následných bloků.
+\begin{frame}{Jazyk}
+\includegraphics[width=0.9\linewidth]{img/boogieSubset.png}
+\end{frame}
+
+% Uvažujeme běhovou sémantiku, tj. každému programu přiřazujeme
+% množinu běhů, což jsou konečné i nekonečné posloupnosti
+% stavů. Stav je přitom jen valuace proměnných.
+
+% Teď tu neřešíme pole.
+\begin{frame}{Sémantika}
+\begin{itemize}
+\pause \item stavy: $\Sigma = \left(\textit{Vars} \rightarrow \mathcal{Z} \right) \cup \{ \textit{Err} \} $
+\pause \item běhy: $\textit{Traces} = \mathcal{N}_0 \hookrightarrow \Sigma$
+\pause \item Sémantika $\mathcal{T} = \textit{Program} \rightarrow 2^{\textit{Traces}}$ dle očekávání
+\pause \item selhaný \lstinline|assert(E)| - nekonečný chybový běh běh ($\textit{Err}^\omega$)
+\pause \item selhaný \lstinline|assume(E)| - nekonečný nechybový běh.
+\end{itemize}
+
+\pause 
+
+\begin{dfn}
+Program $P$ je korektní, píšeme $\vDash P$, pokud $\mathcal{T}(P)$ neobsahuje stop obsahující stav $\textit{Err}$.
+\end{dfn}
+\end{frame}
+
+% V tomto jazyce nejsou řídící podmínky, jen goto.
+% Přesto je možné psát v něm programy.
+% Ukázka kódu v tonto jazyce.
+% Idea: nekonečné nechybové běhy nás nezajímají.
+% Tedy, v tomto jazyku můžeme modelovat i řídící struktury.
+\begin{frame}[fragile]{Ukázka}
+\begin{columns}
+
+\begin{column}{0.5\textwidth}
+Co počítá tento program?
+\begin{lstlisting}
+start:
+  sum := 0;
+  i := n; 
+  goto cycle end
+    
+cycle:
+  assume i > 0;
+  sum *= i;
+  i--;
+  goto cycle end
+     
+end:
+  assume i <= 0;
+  goto
+\end{lstlisting}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\pause
+Řídící struktury: kód ve tvaru
+\begin{lstlisting}
+if (E) { S } else { T }
+\end{lstlisting}
+lze přepsat jako
+\begin{lstlisting}
+Start: goto Then, Else
+Then: assume E; S; goto End
+Else: assume !E; T; goto End
+End: /* ... */
+\end{lstlisting}
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Korektnost se vstupní podmínkou}
+\begin{dfn}
+Program $P \in \textit{Program}$ je korektní se vstupní podmínkou $\phi \in \textit{Formula}$,
+píšeme $\phi \vDash P$, pokud je korektní program:
+\begin{lstlisting}
+Start0 : assume phi; goto Start
+\end{lstlisting}
+\end{dfn}
+
+\pause
+
+\begin{dfn}
+Nechť $A$ je množina obyčejných assertů v programu $P$,
+a nechť $\hat{A}$ je množina andělských assertů 
+uživatelem přidaných do programu $P$. Výrazem $P_{A_1, A_2}$
+označujeme instrumentovanou verzi programu $P$ ,
+která má povolené pouze obyčejné asserty $A_1 \in A$
+a andělské assert $A_2 \in \hat{A}$.
+\end{dfn}
+
 \end{frame}
 
 \begin{frame}{Shovívavá vstupní podmínka}
@@ -199,7 +301,7 @@ a přitom $\phi \vDash P_{A, \emptyset}$.
 
 % Předpokládejme, že máme funkci Verify, které můžeme předhodit
 % program a vstupní podmínku. Tato funkce rozhodne,
-% každý z běhů, jejichž iniciální stav splňuje vstupní podmínku,
+% jestli každý z běhů, jejichž iniciální stav splňuje vstupní podmínku,
 % naplní asserty. Pokud ne, vrátí takovýto běh.
 
 % Algoritmus pro angelickou verifikaci funguje tak,
@@ -231,9 +333,32 @@ a přitom $\phi \vDash P_{A, \emptyset}$.
 \end{columns}
 \end{frame}
 
+%\begin{frame}[fragile]{Příklad}
+%\setbeamercolor{alerted text}{fg=blue}
+%\setbeamerfont{alerted text}{series=\bfseries,family=\ttfamily}
+%\begin{semiverbatim} \small
+%\uncover<1->{\alert<0>{\alert<6>{sub \color{red}matrix_row2vector} \{}}
+%\uncover<2->{\alert<2>{  my $m = shift;    my($rows,$cols) = ($m->[1],$m->[2]);}}
+%\uncover<2->{\alert<2>{  my $r = shift;   # optional, which column from matrix}}
+%\uncover<2->{\alert<2>{  croak "Error: matrix hasn't 3D rows" unless ($colsRun also:>{}>3);}}
+%\uncover<3->{\alert<3>{  if ( defined $r ) \{}}
+%\uncover<3->{\alert<3>{    croak "Error: matrix hasn't that row" unless ($r < $rows);}}
+%\uncover<3->{\alert<3>{  \}}}
+%\uncover<4->{\alert<4>{  else \{}}
+%\uncover<4->{\alert<4>{    croak "Error: matrix is not a 3D row matrix"}}
+%\uncover<4->{\alert<4>{           unless ($rowsRun also: >>  1);}}
+%\uncover<5->{\alert<5>{    $r = 0;}}
+%\uncover<4->{\alert<4>{  \}}}
+%\uncover<6->{\alert<6>{  return Math::VectorReal->%
+%\alert<6>{\color{red}new(@\{$m->[0][$r]\})};}}
+%\uncover<1->{\alert<1>{\}}}
+%\end{semiverbatim}
+%\end{frame}
+
 \begin{frame}{ExplainError}
 \begin{columns}
 
+% Vygeneruje bud formuli v CNF, nebo jen jednu klauzuli (ryhlejsi)
 \begin{column}{0.5\textwidth}
 \includegraphics[width=0.9\linewidth]{img/explainErrorShort.png}
 \end{column}
@@ -245,12 +370,23 @@ Explanation
 \end{columns}
 \end{frame}
 
+% Říkám někde, že stopa je posloupnost příkazů?
+%\item stopa = program bez řídících struktur
+
+
+% Uvažme proceduru FooBar na obrázku.
+% Procedura Verify z algoritmu může vrátit třeba
+% takovoutu stopu tau, která porušuje poslední assert z FooBar.
+% Tuto stopu dostane ExplainError a zkusí z ní vytvořit
+% shovívavou vstupní podmínku, která tuto stopu zablokuje.
 \begin{frame}[fragile]{Příklad}
 \begin{columns}
 
 \begin{column}{0.5\textwidth}<1->
 %\begin{figure}
-\frame{\includegraphics[width=0.9\textwidth]{img/fooBar.png}}
+%\frame{
+\includegraphics[width=0.9\textwidth]{img/fooBar.png}
+%}
 %\caption{Stopa se selhávajícím assertem.}
 %\end{figure}
 \end{column}
@@ -266,7 +402,7 @@ assert w != NULL;
 \end{lstlisting}
 
 \begin{itemize}
-%\item stopa = program bez řídících struktur
+
 \item volání knihovních procedur nahrazena novými proměnnými
 \end{itemize}
 
@@ -299,14 +435,27 @@ assert w != NULL;
 
 $wlp(\tau, true)$:
 \begin{lstlisting}
-read(write(m, x_1, NULL), x_2)
+w != NULL
+read(m, x) != NULL
+read(m, x2) != NULL
+read(write(m, z, NULL), x2) != NULL
+read(write(m, x_1, NULL), x2) != NULL
+
+
+read(write(m, x_1, NULL), x_2) != NULL
 \end{lstlisting}
 
 \pause 
 
 EliminateMapUpdates:
 \begin{lstlisting}
-x_2 == x_1 ? NULL : read(m, x_1)
+(x_2 == x_1 ? NULL : read(m, x_2)) != NULL
+
+(x_1 == x_2 -> NULL != NULL) && (x_1 != x_2 -> read(m, x_2) != NULL)
+(x_1 == x_2 -> false) && (x_1 != x_2 -> read(m, x_2) != NULL)
+(x_1 != x_2 || false) && (x_1 != x_2 -> read(m, x_2) != NULL)
+(x_1 != x_2) && (x_1 != x_2 -> read(m, x_2) != NULL)
+x_1 != x_2 && read(m, x_2) != NULL
 \end{lstlisting}
 
 %\end{column}
