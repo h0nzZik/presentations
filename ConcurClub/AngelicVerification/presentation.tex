@@ -12,6 +12,7 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{graphicx}
+\usepackage{algpseudocode}
 \usepackage{listings}
 \usepackage[margin=1.5cm]{caption}
 \usepackage{float}
@@ -164,210 +165,233 @@ basicstyle=\footnotesize\ttfamily,
 \end{columns}
 \end{frame}
 
+% Vlastně ten poslední program může být docela dobře korektní.
+% Pokud se ale budeme dívat na všechny možné běhy,
+% najdeme chyby, které budou z hlediska programátora falešné alarmy.
+\begin{frame}{Možné defekty}
+\begin{itemize}
+\pause \item definitivní chyby
+\pause \item možné chyby / nekonzistence
+\pause \item chyby, jimž lze zabrát vhodnou vstupní podmínkou
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Cíl}
+\begin{itemize}
+\pause \item cíl: prioritizace důležitějších alarmů
+\pause \item  metoda: angelická verifikace (i.e. abduktivní inference)
+\end{itemize}
+
+\pause
+\begin{dfn}[Problém angelické verifikace]
+Existuje přijatelná specifikace knihovních funkcí
+a přijatelná vstupní podmínka programu taková,
+že žádný assert nemůže v žádném běhu selhat?
+\end{dfn}
+
+\pause
+Chceme, aby přijatelná specifikace byla:
+\begin{itemize}
+\pause \item stručná
+\pause \item shovívavá
+\end{itemize}
+
+\end{frame}
+
+% To nejsou žádné formálně definované pojmy.
+% Asi si dokážeme představit vstupní podmímnku,
+% která není stručná.
+\begin{frame}[fragile]{Stručná vstupní podmínka}
+\begin{semiverbatim}
+\textbf{var} m:[\textbf{int}]\textbf{int};
+\uncover<2->{// precondition:
+// m[1] != NULL \&\& m[2] != NULL \&\& ...}
+\textbf{procedure} Foo() \{
+  \textbf{var} sum := 0;
+  \textbf{for} \textbf{var} i = 1; i < 100; i++ \{
+    \textbf{var} idx = m[i];
+    \textbf{assert} idx != NULL;
+    sum := sum + m[idx];
+  \}
+\}
+\end{semiverbatim}
+\end{frame}
+
+% Shovívavá podmínka je taková, která povoluje
+% velkou množinu vstupních hodnot. Například tahle vstupní
+% podmínka není úplně shovívavá.
+\begin{frame}[fragile]{Shovívavá vstupní podmínka}
+\begin{semiverbatim}
+\only<2>{//  precondition: m == 9}\only<3>{//  precondition: m != m}
+\textbf{procedure} square\_root(m:\textbf{int})
+\textbf{returns}(r:\textbf{int}) \{
+  r := 3;
+\}
+\pause
+\end{semiverbatim}
+Jak poznat shovívavé vstupní podmínky?
+\begin{itemize}
+\pause \item je splnitelná
+\pause \item nevytvoří mrtvý kód
+\pause \item uživatel poradí
+\end{itemize}
+\end{frame}
+
+% Mějme proceduru, která bere jako parametr boolean
+% a dva mutexy.
+% Tato se někdy pokusí zamknout m1,
+% a jindy odemknout m2 - podle hodnoty parametru.
+% V této proceduře samozřejmě může dojít k chybě.
+% Můžeme jí tedy dát jako vstupní podmínku to,
+% že ten jeden mutex bude odemčeny a druhý uzamčený.
+% To je celkem hezká vstupní podmínka. Ale co když
+% programátor chce, aby oba mutexy byly jeden a tentýž mutex?
+% Může to vyjádřit pomocí něčeho, čemu autoři článku říkají
+% andělský assert - na slajdech modře.
+% Tímto assertem popisujeme, které vstupn podmínky jsou příliš silné.
+% Pokud assertovaná formule
+% plyne ze vstupní podmínky, pak je vstupní podmínka příliš silná.
+
+% O programu se vstupní
+% podmínkou říkáme, že je andělsky korektní,
+% pokud žádný běh neporuší žádný černý assert,
+% ale každý modrý assert může být porušen.
+
+% (tedy, pokud tedy mohl být porušen i bez vstupní podmínky.)
+% Jinými slovy, andělským (modrým) assertem
+% uživatel vyjadřuje, že specifikace nesmí způsobit
+% platnost dané formule.
+% 
+% Andělský assert m1 != m2 je ale zvolenou vstupní podmínkou
+% splněn. O této vstupní podmínce tedy říkáme, že není shovívavá
+% - požaduje totiž příliš mnoho.
+\begin{frame}[fragile]{Příklad}
+\begin{semiverbatim} \small
+// precondition: \only<1-2>{true}\only<3->{!locked(m1) && locked(m2)}
+\textbf{procedure} Foo(b:\textbf{Bool}, m1,m2: \textbf{Mutex}) \{ \pause
+\only<4->{\textcolor{blue}{  \textbf{assert} m1 != m2}}
+  \textbf{if}(b) \{
+    \textbf{assert} !locked(m1); lock(m1);
+  \} else \{
+    \textbf{assert} locked(m2); unlock(m2);
+  \}
+  \onslide<1->
+\}
+\end{semiverbatim}
+\onslide<5->
+Tento program s vloženým andělským assertem není
+andělsky korektní vzhledem ke vstupní podmínce.
+\end{frame}
+
+
+\begin{frame}[fragile]{Další andělské asserty}
+Jaký je význam andělských assertů v tomto kódu?
+\begin{semiverbatim}
+\textbf{procedure} Foo(x,y:\textbf{Int}) \{
+  \textbf{if}(x > y) \{
+    // ...
+    \textcolor{blue}{\textbf{assert} false}
+  \} else \{
+    // ...
+    \textcolor{blue}{\textbf{assert} false}
+  \}
+\}
+\end{semiverbatim}
+\pause Vstupní podmínka nesmí způsobit nedosažitelnost konce obou větví.
+\end{frame}
+
+\begin{frame}[fragile]{Další andělské asserty}
+Jaký je význam andělských assertů v tomto kódu?
+\begin{semiverbatim}
+// precondition: x > y
+\textbf{procedure} Foo(x,y:\textbf{Int}) \{
+  \textcolor{blue}{\textbf{assert} false}
+  // ...
+\}
+\end{semiverbatim}
+\pause Vstupní podmínka musí být splnitelná.
+\end{frame}
+
+% Předpokládejme, že máme proceduru Verify, které můžeme předhodit
+% program a vstupní podmínku, a ona rozhodne, jestli je program
+% s touto vstupní podmínkou korektní. A pokud není, vrátí běh,
+% který porušuje některý z assertů.
+% Pomocí této procedury můžeme sestrojit
+% proceduru AngelicVerify, která vezme program P,
+% množinu assertů A a množinu andělických assertů B,
+% a vrátí vstupní podmínku E takovou, že P je andělsky korektní
+% s B a podmnožinou A.
+\begin{frame}{Andělská verifikace}
+\begin{algorithmic} \small
+%\Comment{Algorithm AngelicVerify}
+\State $E \gets \emptyset$
+\State $A^\prime \gets A$
+\Loop
+  \State $\tau \gets \textit{Verify}(P_{A^\prime, \emptyset}, E)$
+  \If {$\tau = \texttt{NoTrace}$}
+  	\Return $\left( E, A^\prime \right)$
+  \EndIf
+  \State $\phi \gets \textsc{ExplainError}(P, \tau)$
+  \If {$\textsc{Permissive}(P_{\emptyset, B}, E \cup \{ \phi \} )$}
+    \State $E \gets E \cup \{ \phi \}$
+  \Else
+  	\State Let $a$ be the failing assert in $\tau$.
+%  	\State Report that $a$ is failing.
+  	\State Remove $a$ from $A^\prime$
+  \EndIf
+\EndLoop
+\end{algorithmic}
+\end{frame}
+
+
+% Předpokládejme, že máme funkci Verify, které můžeme předhodit
+% program a vstupní podmínku. Tato funkce rozhodne,
+% jestli každý z běhů, jejichž iniciální stav splňuje vstupní podmínku,
+% naplní asserty. Pokud ne, vrátí takovýto běh.
+
+% Algoritmus pro angelickou verifikaci funguje tak,
+% že začíná s prázdnou specifikací (tj. true), 
+% a postupně ji zjemňuje tak dlouho,
+% dokud v programu stále existuje chybový běh.
+% Z tohoto chybového běhu se vyextrahuje formule,
+% která tento běh blokuje, a přidá se do specifikace.
+
+% Může se ale stát, že takovou formuli nebudeme schopni najít,
+% nebo bude vzniklá specifikace příliš tvrdá (nebude shovívavá)
+% - například nebude vůbec splnitelná. V takovém případě algoritmus novou formuli nepoužije
+% a odebere selhávající assert z množiny assertů, které se snaží dokázat.
+\begin{frame}{AngelicVerifier}
+\begin{columns}
+
+\begin{column}{0.5\textwidth}
+Algoritmus rozhodující andělskou korektnost.
+\begin{itemize}
+\pause \item Vstupy: program $P$ s obyčejnými asserty $A$ a andělskými asserty $\hat{A}$.
+\pause \item Výstupy: shovívavá specifikace $E$ a množina platících obyčejných assertů $A_1 \subseteq A$.
+\pause \item $\phi$ - formule blokující chybový běh $\tau$
+\end{itemize}
+\end{column}
+
+
+\begin{column}{0.5\textwidth}
+\pause \includegraphics[width=0.9\linewidth]{img/angelicVerifyShort.png}
+\end{column}
+
+
+\end{columns}
+\end{frame}
+
 \begin{frame}{Shrnutí}
 
 \end{frame}
 
-%=======================================================================================
-% Otevřené a uzavřené programy, plané poplachy
-% Začněme příkladem.
-
-% Řekněme, že máme nástroj, kterému předhodíme program a on nám řekne,
-% jestli existuje běh tohoto programu z nějakého iniciálního stavu
-%\begin{frame}[fragile]{Uzavřené vs otevřené programy}
-%
-%
-%\end{frame}
-%
-%% Zabýváme se hledáním běhových chyb či prokazováním jejich absence.
-%% Chyby jsou modelovány selhanými asserty.
-%
-%% Hmm... ta otevřenost může způsobit plané poplachy,
-%% které jsou plané v tom smyslu, že předpokládají nějaké použití programu,
-%% které v reálu nenastane - třeba proto, že ten program pro něj není urrčený.
-%
-%
-%% Uvažme například tento program v jazyce Boogie,
-%% který vznikl zakletím nějakého programu z jazyka C.
-%% Přičemž ukazatele jsou zde modelovány jako čísla, která jsou následně
-%% použitá pro indexování pole m.
-%
-%% Za vstupní bod považujme proceduru Foo.
-%% Hmm... nebo klidne vsechny
-%
-%% Jaké jsou zde zdroje neznámých, neomezených hodnot?
-%% (Parametr z, procedury Lib1, Lib2).
-%% Které z těchto assertů mohou selhat?
-%% Ve vší obecnosti, pokud o neznámých hodnotách nic nepředpokládáme,
-%% mohou selhat všechny. Přesto, když programátor dostane
-%% od nástroje pět varování, nebude z nich úplně nadšený
-%% - on přece ví, že funkce Lib2 nevrací NULL.
-%% Bylo by fajn tahle varování nějak seřadit,
-%% třeba podle toho, jak jsou užitečná.
-%
-%% Chya určitě při volání baz. Nejspíš ano v bar - nekonzistence.
-%% Asi ne pro FooBar. Je celkem rozumné předpokládat, že daná knihovní funkce nevrací NULL.
 %\begin{frame}{Otevřený program - příklad}
 %\includegraphics[width=1.0\linewidth]{img/exampleProgram.png}
 %\end{frame}
 %%
-%%\begin{frame}[fragile]{Některé stopy programu}
-%%\begin{lstlisting}
-%%push; // call bar
-%%gs := 2;
-%%assert x != null;
-%%fail;
-%%\end{lstlisting}
-%%\end{frame}
-%%
-%%\begin{frame}[fragile]
-%%\begin{lstlisting}
-%%int gs;
-%%void bar(int *x) {
-%%  if (x != nullptr) gs = 1;
-%%  else gs = 2;
-%%  *x = 5;
-%%}
-%%
-%%void baz(int *y) {
-%%  *y = 4;
-%%}
-%%
-%%void foo(int *z) {
-%%  bar(z);
-%%  baz(nullptr);
-%%}
-%%
-%%int ** Lib1();
-%%int ** Lib2();
-%%void FooBar() {
-%%  *Lib1() = NULL;
-%%  **Lib2() = 4;
-%%}
-%%\end{lstlisting}
-%%\end{frame}
-%
-%
-%\begin{frame}{Cíl}
-%\begin{itemize}
-%\item cíl: prioritizace důležitějších alarmů
-%\item  metoda: angelická verifikace (i.e. abduktivní inference)
-%\end{itemize}
-%
-%\begin{dfn}[Problém angelické verifikace]
-%Pro daný assert, existuje přijatelná specifikace nad neznámými hodnotami taková,
-%že daný assert platí?
-%\end{dfn}
-%
-%Chceme, aby přijatelná specifikace byla:
-%\begin{itemize}
-%\item stručná
-%\item shovívavá
-%\end{itemize}
-%
-%\end{frame}
-%
-%\section{Detaily}
-%
-%% Uvažujme jednoduchý jazyk (který je prý podmnožinou jazyka Boogie).
-%% Program je tvořen posloupností základních bloků,
-%% přičemž blok se skládá z posloupnosti příkazů a je ukončen
-%% seznamem následných bloků.
-%\begin{frame}{Jazyk}
-%\includegraphics[width=0.9\linewidth]{img/boogieSubset.png}
-%\end{frame}
-%
-%% Uvažujeme běhovou sémantiku, tj. každému programu přiřazujeme
-%% množinu běhů, což jsou konečné i nekonečné posloupnosti
-%% stavů. Stav je přitom jen valuace proměnných.
-%
-%% Teď tu neřešíme pole.
-%\begin{frame}{Sémantika}
-%\begin{itemize}
-%\pause \item stavy: $\Sigma = \left( \textsc{Valuace proměnných} \right) \cup \{ \textit{Err} \} $
-%%\pause \item stavy: $\Sigma = \left(\textit{Vars} \rightarrow \mathcal{Z} \right) \cup \{ \textit{Err} \} $
-%\pause \item běhy: $\textit{Traces} = \Sigma^* \cup \Sigma^\omega$
-%\pause \item Sémantika $\mathcal{T} = \textit{Program} \rightarrow \mathcal{P}(\textit{Traces})$ dle očekávání
-%\pause \item selhaný \lstinline|assert(E)| - běh obsahuje stav $\textit{Err}^\omega$
-%\pause \item selhaný \lstinline|assume(E)| - běh je neuskutečnitelný
-%\end{itemize}
-%
-%\pause 
-%
-%\begin{dfn}
-%Program $P$ je korektní, píšeme $\vDash P$, pokud $\mathcal{T}(P)$ neobsahuje stopu obsahující stav $\textit{Err}$.
-%\end{dfn}
-%\end{frame}
-%
-%% V tomto jazyce nejsou řídící podmínky, jen goto.
-%% Přesto je možné psát v něm programy.
-%% Ukázka kódu v tonto jazyce.
-%% Idea: běhy, v nichž nastane assume(false), nás nezajímavjí.
-%% Tedy... nekonečné nechybové běhy nás nezajímají.
-%% Tedy, v tomto jazyku můžeme modelovat i řídící struktury.
-%\begin{frame}[fragile]{Ukázka}
-%\begin{columns}
-%
-%\begin{column}{0.5\textwidth}
-%Co počítá tento program?
-%\uncover<2->{Jak vypadají uskutečnitelné běhy?}
-%\begin{lstlisting}
-%start:
-%  sum := 0;
-%  i := n; 
-%  goto cycle end
-%    
-%cycle:
-%  assume i > 0;
-%  sum *= i;
-%  i--;
-%  goto cycle end
-%  
-%end:
-%  assume i <= 0;
-%  goto
-%\end{lstlisting}
-%\end{column}
-%
-%\begin{column}{0.5\textwidth}
-%\pause \pause
-%Řídící struktury: kód ve tvaru
-%%\begin{semiverbatim}
-%%if (E) { S } else { T }
-%%\end{semiverbatim}
-%\begin{lstlisting}
-%if (E) { S } else { T }
-%\end{lstlisting}
-%lze přepsat jako
-%\begin{lstlisting}
-%Start: goto Then, Else
-%Then: assume E; S; goto End
-%Else: assume !E; T; goto End
-%End: /* ... */
-%\end{lstlisting}
-%\end{column}
-%\end{columns}
-%\end{frame}
-%
-%% Teď už máme sémantiku jazyka, a můžeme definovat vstupní podmínku
-%\begin{frame}[fragile]{Korektnost se vstupní podmínkou}
-%\begin{dfn}
-%Program $P \in \textit{Program}$ je korektní se vstupní podmínkou $\phi \in \textit{Formula}$,
-%píšeme $\phi \vDash P$, pokud je korektní program:
-%\begin{lstlisting}
-%Start0 : assume phi; goto Start
-%\end{lstlisting}
-%\end{dfn}
-%
-%\pause
-%
-%% Kromě obyčejných assertů již přítomných v programu
-%% budeme pracovat i s uživatelem přidanými andělskými asserty.
-%% Jak uvidíme, tyto budou sloužit k vyjádření toho, co považujeme
-%% za rozumnou vstupní podmínku.
-%% Oba druhy assertů však mají stejnou sémantiku v našem programovacím jazyce.
-%% Tato definice nám jen umožňuje přidávat a odebírat asserty do programu.
-%\begin{dfn}
+
 %Nechť $A$ je množina obyčejných assertů v programu $P$,
 %a nechť $\hat{A}$ je množina andělských assertů 
 %uživatelem přidaných do programu $P$. Výrazem $P_{A_1, A_2}$
@@ -378,33 +402,8 @@ basicstyle=\footnotesize\ttfamily,
 %a
 %%andělské asserty
 %$A_2 \subseteq \hat{A}$.
-%\end{dfn}
-%
-%\end{frame}
-%
-%% Chceme nějak vyjádřit, že vstupní podmínka není moc přísná.
-%% Například pod vstupní podmínkou false je každý program korektní.
-%% Pomocí andělských assertů, které nám poskytne uživatel,
-%%  tedy definujeme shovívavou vstupní podmínku.
-%\begin{frame}{Shovívavá vstupní podmínka}
-%\begin{dfn}[Shovívavá vstupní podmínka]
-%Formule $\phi$ je shovívavá vstupní podmínka programu $P_{A, \hat{A}}$,
-%značíme $Permissive\left( P_{A, \hat{A}}, \Phi \right)$,
-%pokud pro každý andělský assert $s \in \hat{A} $ platí:
-%pokud $\phi \vDash P_{\emptyset, \{ s \} }$, pak  $\textsc{true} \vDash P_{\emptyset, \{ s \} } $.
-%\end{dfn}
-%
-%\pause Jak to říci jinak?
-%
-%\pause Jak vypadají shovívavé vstupní podmínky programu, který obsahuje andělský
-%\begin{itemize}
-%\pause \item \lstinline|assert false| na začátku programu?
-%\pause \item \lstinline|assert false| na konci každého bloku?
-%\pause \item \lstinline|assert x != v| někde?
-%\end{itemize}
-%
-%\end{frame}
-%
+
+
 %% Pomocí shovívavých vstupních podmínek definujeme andělskou korektnost.
 %\begin{frame}{Andělská korektnost}
 %\begin{dfn}
@@ -432,59 +431,7 @@ basicstyle=\footnotesize\ttfamily,
 %
 %
 %\end{frame}
-%
-%% Mějme takovýto kód.
-%\begin{frame}[fragile]{Příklad}
-%\begin{semiverbatim} \small
-%start:
-%  \uncover<4->{\textcolor{blue}{assert m1 != m2}}
-%  goto L1 L2
-%L1:
-%  assert !locked(m1); lock(m1); goto
-%L2:
-%  assert locked(m2); unlock(m2); goto
-%\end{semiverbatim}
-%\uncover<2->{Možná precondition: $m1 \not = m2$.}
-%\uncover<3->{Ale co když uživatel ví, že někdy $m1 = m2$?}
-%\uncover<5->{Nyní již specifikace $m1 \not = m2$ nemusí být shovívavá.}
-%\end{frame}
-%
-%% Předpokládejme, že máme funkci Verify, které můžeme předhodit
-%% program a vstupní podmínku. Tato funkce rozhodne,
-%% jestli každý z běhů, jejichž iniciální stav splňuje vstupní podmínku,
-%% naplní asserty. Pokud ne, vrátí takovýto běh.
-%
-%% Algoritmus pro angelickou verifikaci funguje tak,
-%% že začíná s prázdnou specifikací (tj. true), 
-%% a postupně ji zjemňuje tak dlouho,
-%% dokud v programu stále existuje chybový běh.
-%% Z tohoto chybového běhu se vyextrahuje formule,
-%% která tento běh blokuje, a přidá se do specifikace.
-%
-%% Může se ale stát, že takovou formuli nebudeme schopni najít,
-%% nebo bude vzniklá specifikace příliš tvrdá (nebude shovívavá)
-%% - například nebude vůbec splnitelná. V takovém případě algoritmus novou formuli nepoužije
-%% a odebere selhávající assert z množiny assertů, které se snaží dokázat.
-%\begin{frame}{AngelicVerifier}
-%\begin{columns}
-%
-%\begin{column}{0.5\textwidth}
-%Algoritmus rozhodující andělskou korektnost.
-%\begin{itemize}
-%\pause \item Vstupy: program $P$ s obyčejnými asserty $A$ a andělskými asserty $\hat{A}$.
-%\pause \item Výstupy: shovívavá specifikace $E$ a množina platících obyčejných assertů $A_1 \subseteq A$.
-%\pause \item $\phi$ - formule blokující chybový běh $\tau$
-%\end{itemize}
-%\end{column}
-%
-%
-%\begin{column}{0.5\textwidth}
-%\pause \includegraphics[width=0.9\linewidth]{img/angelicVerifyShort.png}
-%\end{column}
-%
-%
-%\end{columns}
-%\end{frame}
+
 %
 %\begin{frame}{ExplainError}
 %\begin{columns}
