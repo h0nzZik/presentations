@@ -115,6 +115,12 @@ basicstyle=\footnotesize\ttfamily,
 \end{frame}
 
 
+% Třetí příklad. Opět máme globální pole,
+% a navíc dvě knihovní funkce, jejichž implementaci neznáme.
+% Procedura Foo je opět vstupním bodem programu, a tentokrát
+% volá procedu FooBar, ignorujíc přitom svůj parametr.
+% <Popis FooBar>
+% Může dojít k selhání assertu?
 \begin{frame}[fragile]{Do třetice \ldots}
 \begin{columns}
 
@@ -123,10 +129,12 @@ basicstyle=\footnotesize\ttfamily,
 \textbf{var} m:[\textbf{int}]\textbf{int};
 \pause
 // library
-\textbf{procedure} Lib1()
-  \textbf{returns} (r:\textbf{int});
+\textbf{procedure} Lib1() \{
+  \textbf{returns} (r:\textbf{int})\only<-6>{;}
+  \only<7->{\textbf{ensures} (r != NULL);}
 \textbf{procedure} Lib2()
-  \textbf{returns} (r:\textbf{int});
+  \textbf{returns} (r:\textbf{int})\only<-10>{;}
+  \only<11->{\textbf{ensures} (r != NULL);}
 \pause
 // entry point
 \textbf{procedure} Foo(z:\textbf{int}) \{
@@ -137,17 +145,18 @@ basicstyle=\footnotesize\ttfamily,
 
 \begin{column}{0.5\textwidth}
 \begin{semiverbatim}
+\uncover<14->{\textbf{allways} Lib1() != Lib2();}
 \pause
 \textbf{procedure} FooBar() \{
-  \textbf{var} x, w, z:\textbf{int}
-  \textbf{call} z := Lib1();
-  \textbf{assert} z != NULL;
-  m[z] := NULL;
-  \textbf{call} x := Lib2();
-  \textbf{assert} x != NULL;
-  w := m[x];
-  \textbf{assert} w != NULL;
-  m[w] := 4;
+  \textbf{var} x, w, z:\textbf{int}\pause\onslide<+->
+  \textbf{call} z := Lib1();\onslide<+->
+  \textbf{assert} z != NULL;\pause\onslide<+->
+  m[z] := NULL;\onslide<+->
+  \textbf{call} x := Lib2();\onslide<+->
+  \textbf{assert} x != NULL;\pause\onslide<+->
+  w := m[x];\onslide<+->
+  \textbf{assert} w != NULL;\pause\onslide<+->
+  m[w] := 4;\onslide<4->
 \}
 \end{semiverbatim}
 \end{column}
