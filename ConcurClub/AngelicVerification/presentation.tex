@@ -324,7 +324,23 @@ Jaký je význam andělských assertů v tomto kódu?
 % a vrátí vstupní podmínku E takovou, že P je andělsky korektní
 % s B a podmnožinou A.
 \begin{frame}{Andělská verifikace}
+\begin{columns}
+
+\begin{column}{0.4\textwidth}
+\pause
+Vstup: program $P$\\
+s obyčejnými asserty $A$\\
+a andělskými assert $B$.\\
+\pause
+
+
+Výstup:  vstupní podmínka $E$ \\
+a platící asserty $A^\prime \subseteq A$.
+\end{column}
+
+\begin{column}{0.6\textwidth}
 \begin{algorithmic} \small
+\pause
 %\Comment{Algorithm AngelicVerify}
 \State $E \gets \emptyset$
 \State $A^\prime \gets A$
@@ -338,70 +354,144 @@ Jaký je význam andělských assertů v tomto kódu?
     \State $E \gets E \cup \{ \phi \}$
   \Else
   	\State Let $a$ be the failing assert in $\tau$.
-%  	\State Report that $a$ is failing.
+  	\State Remove $a$ from $A^\prime$
+  \EndIf
+\EndLoop
+\end{algorithmic}
+\end{column}
+\end{columns}
+\end{frame}
+
+
+% Uvažme proceduru FooBar na obrázku.
+% Procedura Verify z algoritmu může vrátit třeba
+% takovo stopu tau, která porušuje poslední assert z FooBar.
+% Tuto stopu dostane ExplainError a zkusí z ní vytvořit
+% shovívavou vstupní podmínku, která tuto stopu zablokuje.
+\begin{frame}[fragile]{Příklad}
+\begin{columns}
+
+\begin{column}{0.5\textwidth}
+\begin{semiverbatim}
+\textbf{procedure} FooBar() \{
+  \textcolor<3>{red}{\textbf{var} x, w, z:\textbf{int}}
+  \textcolor<4>{red}{\textbf{call} z := Lib1();}
+  \textcolor<5>{red}{\textbf{assert} z != NULL;}
+  \textcolor<6>{red}{m[z] := NULL;}
+  \textcolor<7>{red}{\textbf{call} x := Lib2();}
+  \textcolor<8>{red}{\textbf{assert} x != NULL;}
+  \textcolor<9>{red}{w := m[x];}
+  \textcolor<10>{red}{\textbf{assert} w != NULL;}
+  m[w] := 4;
+\}
+\end{semiverbatim}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\onslide<2->
+\textcolor{red}{$\tau \gets \textit{Verify}(P_{A^\prime, \emptyset}, E)$}:
+\begin{semiverbatim}\onslide<4->
+z := x_1;\onslide<6->
+m[z] := NULL;\onslide<7->
+x := x_2;\onslide<9->
+w := m[x];\onslide<10->
+\textbf{assert} w != NULL;
+\end{semiverbatim}
+
+% $$wlp(\tau, true) = \textsc{read}(write(m, x_1, NULL), x_2) $$
+
+\end{column}
+
+\end{columns}
+\end{frame}
+
+% Klasický WP kalkulus s tím, že čtení a zápis
+% do polí modelujeme pomocí funkcí read a write.
+% Formule nad jazykem polí, arithmetiky, a rovností.
+% Zkusíme si to na tabuli sami spočítat
+\begin{frame}[fragile]{Příklad}
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\begin{semiverbatim}
+z := x_1;
+m[z] := NULL;
+x := x_2;
+w := m[x];
+\textbf{assert} w != NULL;
+\end{semiverbatim}
+\end{column}
+\begin{column}{0.6\textwidth}
+\pause
+\textcolor{red}{$\phi \gets \textsc{ExplainError}(P, \tau)$}\\
+\pause
+Nejslabší vstupní podmínka pro $\tau$:
+\pause
+\begin{semiverbatim}\small
+read(write(m, x_1, NULL), x_2)
+	!= NULL
+\end{semiverbatim}
+\pause
+Eliminace zápisů do pole:
+\pause
+\begin{semiverbatim}\small
+(x_2 == x_1 ?  NULL :
+  read(m, x_2)) != NULL
+\end{semiverbatim}
+\pause
+Zjednodušení:
+\pause
+\begin{semiverbatim}\small
+x_1 != x_2
+  && read(m, x_2) != NULL
+\end{semiverbatim}
+
+\end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}{AngelicVerify (připomenutí)}
+\begin{algorithmic} \small
+\State $E \gets \emptyset$
+\State $A^\prime \gets A$
+\Loop
+  \State $\tau \gets \textit{Verify}(P_{A^\prime, \emptyset}, E)$
+  \If {$\tau = \texttt{NoTrace}$}
+  	\Return $\left( E, A^\prime \right)$
+  \EndIf
+  \State $\phi \gets \textsc{ExplainError}(P, \tau)$
+  \If {$\textsc{Permissive}(P_{\emptyset, B}, E \cup \{ \phi \} )$}
+    \State $E \gets E \cup \{ \phi \}$
+  \Else
+  	\State Let $a$ be the failing assert in $\tau$.
   	\State Remove $a$ from $A^\prime$
   \EndIf
 \EndLoop
 \end{algorithmic}
 \end{frame}
 
+%\begin{frame}{ExplainError}
+%\includegraphics[width=0.9\linewidth]{img/explainErrorShort.png}
+%\end{frame}
 
-% Předpokládejme, že máme funkci Verify, které můžeme předhodit
-% program a vstupní podmínku. Tato funkce rozhodne,
-% jestli každý z běhů, jejichž iniciální stav splňuje vstupní podmínku,
-% naplní asserty. Pokud ne, vrátí takovýto běh.
+\begin{frame}{ExplainError}
+\begin{algorithmic} \small
+\State $\tau^\prime \gets \textit{ControlSlice}(P, \tau)$
+\State $\phi_1 \gets \textit{wlp}(\tau^\prime)$
+\State $\phi_2 \gets \textit{EliminateMapUpdates}(\phi_1)$
+\State $\phi_3 \gets \textit{Simplify}(\phi_2)$
 
-% Algoritmus pro angelickou verifikaci funguje tak,
-% že začíná s prázdnou specifikací (tj. true), 
-% a postupně ji zjemňuje tak dlouho,
-% dokud v programu stále existuje chybový běh.
-% Z tohoto chybového běhu se vyextrahuje formule,
-% která tento běh blokuje, a přidá se do specifikace.
-
-% Může se ale stát, že takovou formuli nebudeme schopni najít,
-% nebo bude vzniklá specifikace příliš tvrdá (nebude shovívavá)
-% - například nebude vůbec splnitelná. V takovém případě algoritmus novou formuli nepoužije
-% a odebere selhávající assert z množiny assertů, které se snaží dokázat.
-\begin{frame}{AngelicVerifier}
-\begin{columns}
-
-\begin{column}{0.5\textwidth}
-Algoritmus rozhodující andělskou korektnost.
-\begin{itemize}
-\pause \item Vstupy: program $P$ s obyčejnými asserty $A$ a andělskými asserty $\hat{A}$.
-\pause \item Výstupy: shovívavá specifikace $E$ a množina platících obyčejných assertů $A_1 \subseteq A$.
-\pause \item $\phi$ - formule blokující chybový běh $\tau$
-\end{itemize}
-\end{column}
-
-
-\begin{column}{0.5\textwidth}
-\pause \includegraphics[width=0.9\linewidth]{img/angelicVerifyShort.png}
-\end{column}
-
-
-\end{columns}
+%\If {$\textsc{Permissive}(P_{\emptyset, B}, E \cup \{ \phi \} )$}
+%  \State $E \gets E \cup \{ \phi \}$
+%\Else
+%  \State Let $a$ be the failing assert in $\tau$.
+%  \State Remove $a$ from $A^\prime$
+%\EndIf
+\end{algorithmic}
 \end{frame}
 
 \begin{frame}{Shrnutí}
 
 \end{frame}
-
-%\begin{frame}{Otevřený program - příklad}
-%\includegraphics[width=1.0\linewidth]{img/exampleProgram.png}
-%\end{frame}
-%%
-
-%Nechť $A$ je množina obyčejných assertů v programu $P$,
-%a nechť $\hat{A}$ je množina andělských assertů 
-%uživatelem přidaných do programu $P$. Výrazem $P_{A_1, A_2}$
-%označujeme instrumentovanou verzi programu $P$ ,
-%která má povolené pouze
-%%obyčejné
-%asserty $A_1 \subseteq A$
-%a
-%%andělské asserty
-%$A_2 \subseteq \hat{A}$.
 
 
 %% Pomocí shovívavých vstupních podmínek definujeme andělskou korektnost.
@@ -447,106 +537,7 @@ Algoritmus rozhodující andělskou korektnost.
 %
 %\end{columns}
 %\end{frame}
-%
-%% Říkám někde, že stopa je posloupnost příkazů?
-%%\item stopa = program bez řídících struktur
-%
-%
-%% Uvažme proceduru FooBar na obrázku.
-%% Procedura Verify z algoritmu může vrátit třeba
-%% takovoutu stopu tau, která porušuje poslední assert z FooBar.
-%% Tuto stopu dostane ExplainError a zkusí z ní vytvořit
-%% shovívavou vstupní podmínku, která tuto stopu zablokuje.
-%\begin{frame}[fragile]{Příklad}
-%\begin{columns}
-%
-%\begin{column}{0.5\textwidth}<1->
-%%\begin{figure}
-%%\frame{
-%\includegraphics[width=0.9\textwidth]{img/fooBar.png}
-%%}
-%%\caption{Stopa se selhávajícím assertem.}
-%%\end{figure}
-%\end{column}
-%
-%\begin{column}{0.5\textwidth}<2>
-%Stopa $\tau$:
-%\begin{lstlisting}
-%z := x_1;
-%m[z] := NULL;
-%x := x_2;
-%w := m[x];
-%assert w != NULL;
-%\end{lstlisting}
-%
-%\begin{itemize}
-%
-%\item volání knihovních procedur nahrazena novými proměnnými
-%\end{itemize}
-%
-%% $$wlp(\tau, true) = \textsc{read}(write(m, x_1, NULL), x_2) $$
-%
-%\end{column}
-%
-%\end{columns}
-%\end{frame}
-%
-%
-%% Klasický WP kalkulus s tím, že čtení a zápis
-%% do polí modelujeme pomocí funkcí read a write.
-%% Formule nad jazykem polí, arithmetiky, a rovností.
-%% Zkusíme si to na tabuli sami spočítat
-%\begin{frame}[fragile]{Příklad}
-%%\begin{columns}
-%
-%%\begin{column}{0.5\textwidth}<1>
-%Stopa $\tau$:
-%\begin{lstlisting}
-%z := x_1;
-%m[z] := NULL;
-%x := x_2;
-%w := m[x];
-%assert w != NULL;
-%\end{lstlisting}
-%
-%\pause
-%
-%$wlp(\tau, true)$:
-%\begin{lstlisting}
-%read(write(m, x_1, NULL), x_2) != NULL
-%\end{lstlisting}
-%
-%%\begin{lstlisting}
-%%w != NULL
-%%read(m, x) != NULL
-%%read(m, x2) != NULL
-%%read(write(m, z, NULL), x2) != NULL
-%%read(write(m, x_1, NULL), x2) != NULL
-%%read(write(m, x_1, NULL), x_2) != NULL
-%%\end{lstlisting}
-%
-%\pause 
-%
-%EliminateMapUpdates:
-%\begin{lstlisting}
-%(x_2 == x_1 ? NULL : read(m, x_2)) != NULL
-%x_1 != x_2 && read(m, x_2) != NULL
-%\end{lstlisting}
-%
-%%\begin{lstlisting}
-%%(x_2 == x_1 ? NULL : read(m, x_2)) != NULL
-%%
-%%(x_1 == x_2 -> NULL != NULL) && (x_1 != x_2 -> read(m, x_2) != NULL)
-%%(x_1 == x_2 -> false) && (x_1 != x_2 -> read(m, x_2) != NULL)
-%%(x_1 != x_2 || false) && (x_1 != x_2 -> read(m, x_2) != NULL)
-%%(x_1 != x_2) && (x_1 != x_2 -> read(m, x_2) != NULL)
-%%x_1 != x_2 && read(m, x_2) != NULL
-%%\end{lstlisting}
-%
-%%\end{column}
-%%\end{columns}
-%\end{frame}
-%
+
 %\begin{frame}{Shrnutí}
 %
 %\end{frame}
