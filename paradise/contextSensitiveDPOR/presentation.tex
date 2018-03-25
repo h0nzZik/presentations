@@ -9,7 +9,18 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{amsthm}
 \usepackage{graphicx}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{pgf}
+\usepackage{tikz}
+%\usepackage[boxruled,vlined,linesnumbered]{algorithm2e}
+%\usepackage{algorithm2e}
+%\usepackage{hyperref}
+\usetikzlibrary{arrows,automata}
+
+%\resetcounteronoverlays{algocf}
 
 \author{Jan Tušil}
 \title{Context-Sensitive Dynamic Partial Order Reduction}
@@ -29,7 +40,142 @@
 %\tableofcontents
 %\end{frame}
 
-\begin{frame}{•}
+\tikzset{
+    no highlight/.style={fill=blue},
+    highlight/.style={fill=red}
+}
+
+% Řekněme, že máme program se dvěma procesy, p a q,
+% a zajímá nás, v jakých stavech může tento program skončit.
+% Výpočetní strom tohoto programu vypadá takto:
+% Dejme tomu, že máme bezstavový model checker,
+% tedy model checker, který si nepamatuje navštívené stavy, který již opustil.
+% Úplně jednoduchý model checker sestoupí z iniciálního stavu přes p1
+% a přes q1 do finálního stavu, pak backtrackuje zpět do iniciálního stavu a odtud sestoupí
+% pro změnu přes q1 a p1 do druhého (vlastně toho samého) terminálního stavu.
+%
+% Trošku chytřejší model checker by si všiml , že instrukce p1 a q1 jsou nezávislé,
+% tedy že se navzájem nevypnou ani nezapnou a že jsou komutativní, a druhou sekvenci již nebudou zkoumat.
+\begin{frame}[fragile]{Example 1}
+\begin{verbatim}
+p: x := 3    q: y := 4
+\end{verbatim}
+\begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
+%\tikzset{status/.style={no highlight}}
+%\only<2->{\tikzset{status/.style={highlight}}}
+    \node[state]  (I)                      {$(0,0)$};
+    \node[state]                    (p1) [below left of = I] {$(3,0)$};
+    \node[state]                    (q1) [below right of = I] {$(0,4)$};
+    \node[state]                    (p1q1) [below of = p1] {$(3,4)$};
+    \node[state]                    (q1p1) [below of = q1] {$(3,4)$};
+    \draw[->] (I) to node{$p_1$} (p1);
+    \draw[->] (p1) to node{$q_1$} (p1q1);
+    \draw[->] (I) to node{$q_1$} (q1);
+    \draw[->] (q1) to node{$p_1$} (q1p1);
+\end{tikzpicture}
+\end{frame}
+
+% Zde jsou instrukce p1 a q1 závislé, protože obecně nekomutují.
+% Model checker tedy musí prozkoumat oba běhy.
+\begin{frame}[fragile]{Example 2}
+\begin{verbatim}
+p: x := 3    q: y := x
+\end{verbatim}
+\begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
+    \node[state]  (I)                      {$(0,0)$};
+    \node[state]                    (p1) [below left of = I] {$(3,0)$};
+    \node[state]                    (p1q1) [below of = p1] {$(3,3)$};
+    \node[state]                    (q1) [below right of = I] {$(0,0)$};    
+    \node[state]                    (q1p1) [below of = q1] {$(3,0)$};
+    \draw[->] (I) to node{$p_1$} (p1);
+    \draw[->] (p1) to node{$q_1$} (p1q1);
+    \draw[->] (I) to node{$q_1$} (q1);
+    \draw[->] (q1) to node{$p_1$} (q1p1);
+\end{tikzpicture}
+\end{frame}
+
+% Tady máme úplně stejný program, ale spouštěný z jiného iniciálního stavu.
+% Přestože instrukce p1 a q1 obecně nekomutují, v situaci, kdy proměnná x již má
+% hodnotu 3, komutují. Tyto instrukce jsou tedy obecně závislé, ale ve vhodném kontextu
+% nezávislé. Tedy opět zde stačí prozkoumat pouze jeden běh.
+\begin{frame}[fragile]{Example 3}
+\begin{verbatim}
+p: x := 3    q: y := x
+\end{verbatim}
+\begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
+    \node[state]  (I)                      {$(3,1)$};
+    \node[state]                    (p1) [below left of = I] {$(3,1)$};
+    \node[state]                    (p1q1) [below of = p1] {$(3,3)$};
+    \node[state]                    (q1) [below right of = I] {$(3,3)$};    
+    \node[state]                    (q1p1) [below of = q1] {$(3,3)$};
+    \draw[->] (I) to node{$p_1$} (p1);
+    \draw[->] (p1) to node{$q_1$} (p1q1);
+    \draw[->] (I) to node{$q_1$} (q1);
+    \draw[->] (q1) to node{$p_1$} (q1p1);
+\end{tikzpicture}
+\end{frame}
+
+%TODO do hezciho obrazku
+%
+% výpočetní krok
+%             |
+%           vvvvvv
+% [ x := 5; y := x; z++ ]
+% ^^^^^^^^^^^^^^^^^^^^^^^
+% Výpočetní posloupnost
+\begin{frame}{Pojmy}
+%\begin{itemize}
+%\item Krok výpočtu
+%\end{itemize}
+\end{frame}
+
+
+% Proč potřebuji pojmy? Abych definoval happens-before a Mazurkiewiczovu stopu
+
+% Hmm, optimální DPOR nestaví na žádné konkrétní HB relaci,
+% ale na abstraktní HB - prostě relace (resp. funkce ze stop na relaci)
+% splňující nějaké požadavky.
+
+% Mohli bychom říci, že naše zvolená HB relace není context-sensitivní,
+% protože instrukce musí být nezávislé úplně. Ale ukazuje se, že 
+% každá HB relace povolená algoritmem Optimal DPOR je necitlivá na kontext.
+% TODO: počeštit (citlivost na kontext).
+%
+\begin{frame}[fragile]{Algoritmus}
+
+\begin{algorithmic}
+\State $x \gets 0$
+\uncover<2>{\State $y \gets 1$}
+\end{algorithmic}
+
+
+%\begin{semiverbatim}
+%\textbf{procedure} $\textit{Explore}(E, \textit{Sleep})$
+%  sleep(E) := Sleep;
+%  
+%  \textbf{if} $\textit{enabled}(s[e]) \subseteq \textit{Sleep}$ \textbf{then}
+%    \textbf{return};
+%  \textbf{end}
+%  
+%  \textbf{choose} $p \in (\textit{enabled}(s[e]) \setminus \textit{Sleep})$;
+%  
+%  $\textit{backtrack}(E)$ := $\{ p \}$;
+%  \textbf{while} $\exists p \in \textit{backtrack}(E) \setminus \textit{sleep}(E)$ \textbf{do}
+%    \textbf{for all} $(e \in \textit{dom}(E))$ \textbf{such that} e is in reversible conflict with p \textbf{do}
+%      Do something
+%    \textbf{end if}
+%    Do something else;
+%    $\textit{Explore}(E.p)$;
+%    $\textit{sleep}(E) := \textit{sleep}(E) \cup \{ p \}$;
+%  \textbf{end while}
+%\textbf{end procedure}
+%\end{semiverbatim}
+
+
+\end{frame}
+
+
+\begin{frame}{Relace happened-before}
 
 \end{frame}
 
