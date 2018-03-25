@@ -130,6 +130,25 @@ p: x := 3    q: y := x
 \end{frame}
 
 
+\begin{frame}
+\begin{itemize}
+\item Od naivního k Source-POR
+\item Od Source-POR k Context-Sensitive (Source-) POR
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Notace}
+\begin{algorithmic}
+\pause \State \textbf{val} Event $ \gets $ Process $ \times \mathbb{N}$
+\pause \State \textbf{val} s : State \pause \Comment{Iniciální stav}
+\pause \State \textbf{val} s[\_] : Trace -> State \pause \Comment{Stav, do něhož doběhne stopa z s}
+\pause \State \textbf{val} enabled : State -> Set<Process>
+\pause \State \textbf{var} Sleep : Trace -> Set<Trace> \pause \Comment{Navazující stopy jež netřeba řešit}
+\pause \State \textbf{var} backtrack : Trace -> Set<Process>
+\pause \State \textbf{val} dom : Trace -> Set<Event>
+\end{algorithmic}
+\end{frame}
+
 % Proč potřebuji pojmy? Abych definoval happens-before a Mazurkiewiczovu stopu
 
 % Hmm, optimální DPOR nestaví na žádné konkrétní HB relaci,
@@ -143,34 +162,53 @@ p: x := 3    q: y := x
 %
 \begin{frame}[fragile]{Algoritmus}
 
-\begin{algorithmic}
-\State $x \gets 0$
-\uncover<2>{\State $y \gets 1$}
+% TODO typy. sleep: ExecSequence
+% Btw ExecutionStep je reprezentovan jmenem procesu/vlakna
+\begin{algorithmic} \small
+%\State \textbf{var} enabled : State -> Set<Process>
+%\State \textbf{var} backtrack : Trace -> Set<Process>
+%\State \textbf{var} Sleep : Trace -> Set<Trace>
+\Function{ExploreCS}{$E$ : Trace, $Sleep$ : Set<Trace>}
+  \State $sleep(E) \gets Sleep$
+  \State \textbf{choose process} $p \in \textit{enabled}(s[e]) \setminus \textit{Sleep}$
+  \textbf{or} \Return
+  \State $\textit{backtrack}(E) \gets \{ p \}$;
+  
+  \While{$\exists p \in \textit{backtrack}(E) \setminus \textit{sleep}(E)$}
+    \State \Call{DetectRaces}{$E$, $p$}
+  
+    \State $\textit{Sleep}^\prime \gets \{ v \mid v \in \textit{sleep}(E) \land E \vDash p \diamond v \}$
+    \State $\textit{Sleep}^\prime \gets \textit{Sleep}^\prime \cup \{ v \mid p.v \in \textit{sleep(E)} \}$
+%    \only<2>{\State $\textit{Sleep}^\prime \gets \textit{Sleep}^\prime \cup \{ v \mid p.v \in \textit{sleep(E)} \}$}
+    \State \Call{Explore}{$E.p$, $Sleep^\prime$}
+    \State $\textit{sleep}(E) \gets \textit{sleep}(E) \cup \{ p \}$
+
+    %\uncover<3>{\State $z \gets 2$}
+
+  \EndWhile  
+\EndFunction
 \end{algorithmic}
+\end{frame}
 
+% Detekuje konfliktní události na cestě E
+\begin{frame}{DetectRaces}
 
-%\begin{semiverbatim}
-%\textbf{procedure} $\textit{Explore}(E, \textit{Sleep})$
-%  sleep(E) := Sleep;
-%  
-%  \textbf{if} $\textit{enabled}(s[e]) \subseteq \textit{Sleep}$ \textbf{then}
-%    \textbf{return};
-%  \textbf{end}
-%  
-%  \textbf{choose} $p \in (\textit{enabled}(s[e]) \setminus \textit{Sleep})$;
-%  
-%  $\textit{backtrack}(E)$ := $\{ p \}$;
-%  \textbf{while} $\exists p \in \textit{backtrack}(E) \setminus \textit{sleep}(E)$ \textbf{do}
-%    \textbf{for all} $(e \in \textit{dom}(E))$ \textbf{such that} e is in reversible conflict with p \textbf{do}
-%      Do something
-%    \textbf{end if}
-%    Do something else;
-%    $\textit{Explore}(E.p)$;
-%    $\textit{sleep}(E) := \textit{sleep}(E) \cup \{ p \}$;
-%  \textbf{end while}
-%\textbf{end procedure}
-%\end{semiverbatim}
-
+\begin{algorithmic} \small
+\Function{DetectRaces}{E : Trace, p: Process}
+\State \textbf{val} $e_p$ : Event $ \gets \textit{next}_E(p)$
+%\ForAll{$e \in \textit{dom}(E)$} \textbf{such that} $e \precsim_{E.p} pe f$
+\ForAll{$e \in \textit{dom}(E)$ \textbf{such that} $e$ is in reversible race with $e_p$}
+  \State \textbf{val} $E^\prime \gets \textit{prefixBefore}(E, e)$ \Comment{does not include $e$}
+  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixFrom}(e, P).p$ \Comment{includes $e$}
+  \only<1>{\If{the first event of $v$ is not in $\textit{backtrack}(E^\prime) \not$}
+    \State add it there
+  \EndIf}
+  \only<2>{\If{$I_{E^\prime}(v) \cap \textit{backtrack}(E^\prime) \not = \emptyset$}
+    \State add some $q^\prime \in I_{E^\prime}(v)$ to $\textit{backtrack}(E^\prime)$
+  \EndIf}
+\EndFor
+\EndFunction
+\end{algorithmic}
 
 \end{frame}
 
