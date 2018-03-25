@@ -178,7 +178,7 @@ p: x := 3    q: y := x
     \State \Call{DetectRaces}{$E$, $p$}
   
     \State $\textit{Sleep}^\prime \gets \{ v \mid v \in \textit{sleep}(E) \land E \vDash p \diamond v \}$
-    \State $\textit{Sleep}^\prime \gets \textit{Sleep}^\prime \cup \{ v \mid p.v \in \textit{sleep(E)} \}$
+    \State \textcolor{blue}{$\textit{Sleep}^\prime \gets \textit{Sleep}^\prime \cup \{ v \mid p.v \in \textit{sleep(E)} \}$}
 %    \only<2>{\State $\textit{Sleep}^\prime \gets \textit{Sleep}^\prime \cup \{ v \mid p.v \in \textit{sleep(E)} \}$}
     \State \Call{Explore}{$E.p$, $Sleep^\prime$}
     \State $\textit{sleep}(E) \gets \textit{sleep}(E) \cup \{ p \}$
@@ -199,19 +199,35 @@ p: x := 3    q: y := x
 %\ForAll{$e \in \textit{dom}(E)$} \textbf{such that} $e \precsim_{E.p} pe f$
 \ForAll{$e \in \textit{dom}(E)$ \textbf{such that} $e$ is in reversible race with $e_p$}
   \State \textbf{val} $E^\prime \gets \textit{prefixBefore}(E, e)$ \Comment{does not include $e$}
-  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixFrom}(e, P).p$ \Comment{includes $e$}
-  \only<1>{\If{the first event of $v$ is not in $\textit{backtrack}(E^\prime) \not$}
+  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixAfter}(e, P).p$ \Comment{does not include $e$}
+  \only<1>{\If{the first event of $v$ is not in $\textit{backtrack}(E^\prime)$}
     \State add it there
   \EndIf}
+  % More general version
   \only<2>{\If{$I_{E^\prime}(v) \cap \textit{backtrack}(E^\prime) \not = \emptyset$}
     \State add some $q^\prime \in I_{E^\prime}(v)$ to $\textit{backtrack}(E^\prime)$
   \EndIf}
+  \State \textcolor{blue}{\Call{sleepSomething}{$E$, $p$, $e$, $E^\prime$, $v$}}
 \EndFor
 \EndFunction
 \end{algorithmic}
-
+\uncover<2>{Výraz $I_{E^\prime}(v)$ označuje procesy,
+které mají v posloupnosti $v$ nějakou událost,
+která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$.}
 \end{frame}
 
+\begin{frame}{sleepSomething}
+\begin{algorithmic} \small
+\Function{sleepSomething}{E, p, e : Event, $E^\prime $ : Trace, v : Trace}
+  \State \textbf{val} $u \gets \textit{depSuffixFrom}(e, E)$
+  \uncover<2>{\If{$\not \exists w \in \textit{sleep}(E^\prime) $ \textbf{where} $ w \leq v.u$} \Comment{redundancy check}}
+    \If{$s[E.p] = s[E^\prime.v.u]$} \Comment{commutativity}
+      \State $\textit{sleep}(E) \gets \textit{sleep}(E) \cup \{ v.u \}$
+    \EndIf
+  \uncover<2>{\EndIf}
+\EndFunction
+\end{algorithmic}
+\end{frame}
 
 \begin{frame}{Relace happened-before}
 
