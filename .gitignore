@@ -11,6 +11,9 @@
 *.cb
 *.cb2
 
+# Other
+tikz.txt
+
 ## Intermediate documents:
 *.dvi
 *-converted-to.*
