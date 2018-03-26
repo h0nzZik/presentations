@@ -49,6 +49,11 @@
     highlight/.style={fill=red}
 }
 
+% Jak to celé bude?
+% Nejprve POR obecně,
+% potom Source-DPOR,
+% potom Context-Sensitive Source-DPOR.
+
 % Řekněme, že máme program se dvěma procesy, p a q,
 % a zajímá nás, v jakých stavech může tento program skončit.
 % Výpočetní strom tohoto programu vypadá takto:
@@ -61,12 +66,10 @@
 % Trošku chytřejší model checker by si všiml , že instrukce p1 a q1 jsou nezávislé,
 % tedy že se navzájem nevypnou ani nezapnou a že jsou komutativní, a druhou sekvenci již nebudou zkoumat.
 \begin{frame}[fragile]{Example 1}
-\begin{verbatim}
+\begin{semiverbatim} \small
 p: x := 3    q: y := 4
-\end{verbatim}
+\end{semiverbatim}
 \begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
-%\tikzset{status/.style={no highlight}}
-%\only<2->{\tikzset{status/.style={highlight}}}
     \node[state]  (I)                      {$(0,0)$};
     \node[state]                    (p1) [below left of = I] {$(3,0)$};
     \node[state]                    (q1) [below right of = I] {$(0,4)$};
@@ -82,9 +85,9 @@ p: x := 3    q: y := 4
 % Zde jsou instrukce p1 a q1 závislé, protože obecně nekomutují.
 % Model checker tedy musí prozkoumat oba běhy.
 \begin{frame}[fragile]{Example 2}
-\begin{verbatim}
+\begin{semiverbatim} \small
 p: x := 3    q: y := x
-\end{verbatim}
+\end{semiverbatim}
 \begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
     \node[state]  (I)                      {$(0,0)$};
     \node[state]                    (p1) [below left of = I] {$(3,0)$};
@@ -103,9 +106,9 @@ p: x := 3    q: y := x
 % hodnotu 3, komutují. Tyto instrukce jsou tedy obecně závislé, ale ve vhodném kontextu
 % nezávislé. Tedy opět zde stačí prozkoumat pouze jeden běh.
 \begin{frame}[fragile]{Example 3}
-\begin{verbatim}
+\begin{semiverbatim} \small
 p: x := 3    q: y := x
-\end{verbatim}
+\end{semiverbatim}
 \begin{tikzpicture}[>=stealth,node distance=2.0cm,auto]
     \node[state]  (I)                      {$(3,1)$};
     \node[state]                    (p1) [below left of = I] {$(3,1)$};
@@ -119,27 +122,67 @@ p: x := 3    q: y := x
 \end{tikzpicture}
 \end{frame}
 
-%TODO do hezciho obrazku
-%
-% výpočetní krok
-%             |
-%           vvvvvv
-% [ x := 5; y := x; z++ ]
-% ^^^^^^^^^^^^^^^^^^^^^^^
-% Výpočetní posloupnost
-\begin{frame}{Pojmy}
+%%TODO do hezciho obrazku
+%%
+%% výpočetní krok
+%%             |
+%%           vvvvvv
+%% [ x := 5; y := x; z++ ]
+%% ^^^^^^^^^^^^^^^^^^^^^^^
+%% Výpočetní posloupnost
+%\begin{frame}{Pojmy}
+%%\begin{itemize}
+%%\item Krok výpočtu
+%%\end{itemize}
+%\end{frame}
+
+
+%\begin{frame}
 %\begin{itemize}
-%\item Krok výpočtu
+%\item Od naivního k Source-POR
+%\item Od Source-POR k Context-Sensitive (Source-) POR
 %\end{itemize}
-\end{frame}
+%\end{frame}
+
+% Běhy jsou vlastně linearizace relace Happens-Before?
+\begin{frame}[fragile]{Happens-Before}
+\begin{columns}
+
+\begin{column}{0.5\textwidth}
+Program
+\begin{semiverbatim} \small
+p: write(x);
+q: read(y); read(x);
+r: read(z); read(x);
+\end{semiverbatim}
+
+\onslide<5->
+Jaké jsou jiné běhy se stejnou Happens-Before relací?
 
 
-\begin{frame}
-\begin{itemize}
-\item Od naivního k Source-POR
-\item Od Source-POR k Context-Sensitive (Source-) POR
-\end{itemize}
+\onslide<6->
+
+Není ale třeba je zkoumat.
+
+\end{column}
+\begin{column}{0.5\textwidth}
+\pause
+Konkrétní běh:
+\begin{semiverbatim} \small
+p1: write(x);
+q1: read(y);
+q2: read(x);
+r1: read(z);
+r2: read(x);
+\end{semiverbatim}
+\pause
+Happens-Before tohoto běhu:
+\pause
+\includegraphics[width=0.9\linewidth]{img/hb1.png}
+\end{column}
+\end{columns}
 \end{frame}
+
 
 \begin{frame}[fragile]{Notace}
 \begin{algorithmic}
@@ -154,6 +197,11 @@ p: x := 3    q: y := x
 \end{frame}
 
 
+% Idea za Source DPOR: DFS, u každého vrcholu na zásobníku si držím
+% seznam hran, které ještě musím projít, a taky seznam, které už projít nemusím.
+% Místo abych si ale seznam hran/procesů na projití vytvořil hned při vstupu do uzlu,
+% průběžně je tam přidávám, jak zjišťuji, které hrany jsou kolizní.
+% Protože není-li kolizní, mohu ji provézt na konci aktuální cesty.
 \begin{frame}[fragile]{Source DPOR (1)}
 
 % TODO typy. sleep: ExecSequence
@@ -207,11 +255,21 @@ která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$
 \end{frame}
 
 \begin{frame}[fragile]{Source DPOR - příklad}
-\begin{lstlisting}
+\begin{semiverbatim}
 p: write(x);
 q: read(y); read(x);
 r: read(z); read(x);
-\end{lstlisting}
+\end{semiverbatim}
+\pause
+Na tabuli
+\end{frame}
+
+\begin{frame}[fragile]{Source DPOR není citlivé na kontext}
+\begin{semiverbatim}
+p: write(x = 5);
+q: write(x = 5);
+r: read(x)
+\end{semiverbatim}
 \pause
 Na tabuli
 \end{frame}
@@ -228,7 +286,7 @@ Na tabuli
 % každá HB relace povolená algoritmem Optimal DPOR je necitlivá na kontext.
 % TODO: počeštit (citlivost na kontext).
 %
-\begin{frame}[fragile]{Algoritmus}
+\begin{frame}[fragile]{Context-Sensitive DPOR}
 
 % TODO typy. sleep: ExecSequence
 % Btw ExecutionStep je reprezentovan jmenem procesu/vlakna
@@ -297,9 +355,17 @@ která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$
 \end{algorithmic}
 \end{frame}
 
-\begin{frame}{Relace happened-before}
 
+\begin{frame}[fragile]{Příklad}
+\begin{semiverbatim}
+p: write(x = 5);
+q: write(x = 5);
+r: read(x)
+\end{semiverbatim}
+\pause
+Na tabuli
 \end{frame}
+
 
 \begin{frame}{Proč to funguje}
 \pause
