@@ -153,6 +153,70 @@ p: x := 3    q: y := x
 \end{algorithmic}
 \end{frame}
 
+
+\begin{frame}[fragile]{Source DPOR (1)}
+
+% TODO typy. sleep: ExecSequence
+% Btw ExecutionStep je reprezentovan jmenem procesu/vlakna
+\begin{algorithmic} \small
+%\State \textbf{var} enabled : State -> Set<Process>
+%\State \textbf{var} backtrack : Trace -> Set<Process>
+%\State \textbf{var} Sleep : Trace -> Set<Trace>
+\Function{ExploreSource}{$E$ : Trace, $Sleep$ : Set<Trace>}
+  \State $sleep(E) \gets Sleep$
+  \State \textbf{choose process} $p \in \textit{enabled}(s[e]) \setminus \textit{Sleep}$
+  \textbf{or} \Return
+  \State $\textit{backtrack}(E) \gets \{ p \}$;
+  
+  \While{$\exists p \in \textit{backtrack}(E) \setminus \textit{sleep}(E)$}
+    \State \Call{DetectRacesSource}{$E$, $p$}  
+    \State $\textit{Sleep}^\prime \gets \{ v \mid v \in \textit{sleep}(E) \land E \vDash p \diamond v \}$
+    \State \Call{Explore}{$E.p$, $Sleep^\prime$}
+    \State $\textit{sleep}(E) \gets \textit{sleep}(E) \cup \{ p \}$
+
+    %\uncover<3>{\State $z \gets 2$}
+
+  \EndWhile  
+\EndFunction
+\end{algorithmic}
+\end{frame}
+
+% Detekuje konfliktní události na cestě E
+\begin{frame}{Source DPOR (2)}
+
+\begin{algorithmic} \small
+\Function{DetectRacesSource}{E : Trace, p: Process}
+\State \textbf{val} $e_p$ : Event $ \gets \textit{next}_E(p)$
+%\ForAll{$e \in \textit{dom}(E)$} \textbf{such that} $e \precsim_{E.p} pe f$
+\ForAll{$e \in \textit{dom}(E)$ \textbf{such that} $e$ is in reversible race with $e_p$}
+  \State \textbf{val} $E^\prime \gets \textit{prefixBefore}(E, e)$ \Comment{does not include $e$}
+  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixAfter}(e, E).p$ \Comment{does not include $e$}
+  \only<1>{\If{the first event of $v$ is not in $\textit{backtrack}(E^\prime)$}
+    \State add it there
+  \EndIf}
+  % More general version
+  \only<2>{\If{$I_{E^\prime}(v) \cap \textit{backtrack}(E^\prime) \not = \emptyset$}
+    \State add some $q^\prime \in I_{E^\prime}(v)$ to $\textit{backtrack}(E^\prime)$
+  \EndIf}
+\EndFor
+\EndFunction
+\end{algorithmic}
+\uncover<2>{Výraz $I_{E^\prime}(v)$ označuje procesy,
+které mají v posloupnosti $v$ nějakou událost,
+která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$.}
+\end{frame}
+
+\begin{frame}[fragile]{Source DPOR - příklad}
+\begin{lstlisting}
+p: write(x);
+q: read(y); read(x);
+r: read(z); read(x);
+\end{lstlisting}
+\pause
+Na tabuli
+\end{frame}
+
+
 % Proč potřebuji pojmy? Abych definoval happens-before a Mazurkiewiczovu stopu
 
 % Hmm, optimální DPOR nestaví na žádné konkrétní HB relaci,
@@ -198,7 +262,7 @@ p: x := 3    q: y := x
 \begin{frame}{DetectRaces}
 
 \begin{algorithmic} \small
-\Function{DetectRaces}{E : Trace, p: Process}
+\Function{DetectRacesCS}{E : Trace, p: Process}
 \State \textbf{val} $e_p$ : Event $ \gets \textit{next}_E(p)$
 %\ForAll{$e \in \textit{dom}(E)$} \textbf{such that} $e \precsim_{E.p} pe f$
 \ForAll{$e \in \textit{dom}(E)$ \textbf{such that} $e$ is in reversible race with $e_p$}
