@@ -30,6 +30,10 @@
 %\institute{} 
 %\date{} 
 %\subject{} 
+
+\newtheorem{dfn}{Definice}
+\newtheorem{tvrzeni}{Tvrzení}
+
 \begin{document}
 
 \begin{frame}
@@ -199,7 +203,7 @@ p: x := 3    q: y := x
 %\ForAll{$e \in \textit{dom}(E)$} \textbf{such that} $e \precsim_{E.p} pe f$
 \ForAll{$e \in \textit{dom}(E)$ \textbf{such that} $e$ is in reversible race with $e_p$}
   \State \textbf{val} $E^\prime \gets \textit{prefixBefore}(E, e)$ \Comment{does not include $e$}
-  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixAfter}(e, P).p$ \Comment{does not include $e$}
+  \State \textbf{val} $v : \textsf{Trace} \gets \textit{indepSuffixAfter}(e, E).p$ \Comment{does not include $e$}
   \only<1>{\If{the first event of $v$ is not in $\textit{backtrack}(E^\prime)$}
     \State add it there
   \EndIf}
@@ -207,7 +211,7 @@ p: x := 3    q: y := x
   \only<2>{\If{$I_{E^\prime}(v) \cap \textit{backtrack}(E^\prime) \not = \emptyset$}
     \State add some $q^\prime \in I_{E^\prime}(v)$ to $\textit{backtrack}(E^\prime)$
   \EndIf}
-  \State \textcolor{blue}{\Call{sleepSomething}{$E$, $p$, $e$, $E^\prime$, $v$}}
+  \State \textcolor{blue}{\Call{suspendSomething}{$E$, $p$, $e$, $E^\prime$, $v$}}
 \EndFor
 \EndFunction
 \end{algorithmic}
@@ -216,9 +220,9 @@ které mají v posloupnosti $v$ nějakou událost,
 která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$.}
 \end{frame}
 
-\begin{frame}{sleepSomething}
+\begin{frame}{suspendSomething}
 \begin{algorithmic} \small
-\Function{sleepSomething}{E, p, e : Event, $E^\prime $ : Trace, v : Trace}
+\Function{suspendSomething}{E, p, e : Event, $E^\prime $ : Trace, v : Trace}
   \State \textbf{val} $u \gets \textit{depSuffixFrom}(e, E)$
   \uncover<2>{\If{$\not \exists w \in \textit{sleep}(E^\prime) $ \textbf{where} $ w \leq v.u$} \Comment{redundancy check}}
     \If{$s[E.p] = s[E^\prime.v.u]$} \Comment{commutativity}
@@ -231,6 +235,31 @@ která nenastává po (ve smyslu happens-before) žádné jiné události ve $v$
 
 \begin{frame}{Relace happened-before}
 
+\end{frame}
+
+\begin{frame}{Proč to funguje}
+\pause
+\begin{dfn}
+Mazurkiewiczova stopa je happened-before relace úplné výpočetní posloupnosti.
+\end{dfn}
+
+\pause
+\begin{tvrzeni}
+Pro každou Mazurkiewiczovu stopu $T$, $\textit{ExploreSourcePOR}(\epsilon, \emptyset)$
+prozkoumá nějakou výpočetní sekvenci $E$, která stopu $T$ implementuje.
+\end{tvrzeni}
+
+\pause
+\begin{tvrzeni}
+Pro každou Mazurkiewiczovu stopu $T$, $\textit{ExploreCS}(\epsilon, \emptyset)$
+prozkoumá nějakou výpočetní sekvenci $E$, která buď implementuje stopu $T$,
+nebo dosáhne stejného stavu jako nějaká jiná sekvence $E^\prime$, která stopu $T$ implementuje.
+\end{tvrzeni}
+
+%
+%\begin{tvrzeni}
+%ddd
+%\end{tvrzeni}
 \end{frame}
 
 \end{document}
