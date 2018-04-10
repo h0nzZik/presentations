@@ -5,7 +5,7 @@
 
 \usepackage{hyperref}
 \usepackage[utf8]{inputenc}
-\usepackage[czech]{babel}
+\usepackage[english]{babel}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -13,7 +13,7 @@
 \usepackage{graphicx}
 \usepackage{listings}
 \author{Jan Tušil}
-\title{Formal Semantics of C++? Why?}
+\title{Formal Semantics of C++ language? Why?}
 %\setbeamercovered{transparent} 
 %\setbeamertemplate{navigation symbols}{} 
 %\logo{} 
@@ -37,41 +37,61 @@
 
 \begin{document}
 
-
-% Osnova:
-% Kdo jsem - Muj obor (PdS), 
-% Kontext
-% Cile prace
-% Co se podarilo
-% Dalsi kroky
-% Co chci zminit:
-% - kdo me vedl, s kym jsem praci konzultoval, UIUC, RV
-
-
-% Koho mam v komisi? Pelanek, Strejcek, Hlineny. Vsichni trochu do tech formalnich
-% metod vidi. Strejda praci cetl, tedy musim se ji snazit prodat hlavne Pelankovi a Hlinenemu.
-% Nesmim se poustet do spekulaci.
-% K tomu, ze jsem nasel chyby v Gcc a Clang, a nejakou nejednoznacnost ve standardu:
-% to neni tim, jaky jsem borec. To se proste stava, kdyz nekdo neco formalizuje. Kdyz lidi
-% pracovali na semantice JavaScriptu, take nasli chyby v interpreterech. A ted behem praci
-% na formalizaci Etherea.
-
-% K cemu je ta semantika dobra? Jak se to testuje? Mame interpreter, ktery ji pouziva.
-
-% TODO čítač stránek, progress bar apod. Mezislajdy mezi sekcemi.
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Phase 1: Attention
+% If I go first:
+% Good morning everyone. It is a prleasant surprise that there are
+% so many of us in such an early hour. Did you sleep well?
+% I hope you did, so you will not fall asleap now.
+% If I go second:
+% Good morning everyone. I hope you are enjoing the presentations
+% as much as I do. Now you are hopefuly woke up enough not to fall asleap
+% during my talk.
+
+% Phase 2: Benefit
+% My name is Honza Tušil. I could have named the talk 'Formal semantics of C++ and why you should care'.
+% 
+
+%My name is Honza Tušil
 % Dobrý den, já jsem Honza Tušil a rád bych vám představil svoji diplomovou práci, 
 % ve které jsem se zabýval vytvářením spustitelné formální sémantiky pro jazyk C++.
 \begin{frame}
 \titlepage
 \end{frame}
 
-% Během následující čtvrthodinky nejprve přiblížím kontext mojí práce,
-% poté ukáži, co jsem vlastně dělal, a nakonec shrnu, jak to všechno dopadlo.
-\begin{frame}{Osnova}
+
+% Phase 3: Credibility (20s)
+% As I have said, my name is Honza Tusil
+% and I am currently a Ph.D. candidate at FI MU.
+% My research interested include software verification,
+% programming language semantics and programming languages
+% in general. I am also tutoring some C and C++ related classes
+% and in past I did some part-time C/C++ development on embedded systems for a local company.
+\begin{frame}{About me}
+\begin{columns}
+
+\begin{column}{0.30\textwidth}
+\includegraphics[width=1.0\linewidth]{img/me.jpg}
+\end{column}
+\begin{column}{0.7\textwidth}
+\begin{itemize}
+\pause \item research: SW verification, PL semantics
+\pause \item teaching: programming in C (PB071) and C++ (PB161)
+\pause \item past: C/C++ @ embedded systems (local company)
+\pause \item \url{jan.tusil@mail.muni.cz}
+\pause \item \url{https://www.fi.muni.cz/~xtusil/}
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% In the following ten minutes I would like to talk about the following. First I am going to show the current situation 
+% of C++ analysis/verification tooling, then I will explain how
+% is my Master thesis to this, and finally I am going to
+% show the future work I would like to do.
+
+\begin{frame}{The structure}
 \tableofcontents
 \end{frame}
 
@@ -83,62 +103,130 @@
   \end{frame}
 }
 
-\section{Kontext}
+%\section{The Context}
+\section{Why bother?}
 
-% Moderní programovací jazyky jsou hodně mocné - a hodně složité.
-% Popis jazyka C++ ve standardu má asi 380 stránek,
-% celý standard i s popisem knihovny má okolo 1400 stránek.
-% Některé vlastnosti jsou do jazyka přidávány, jiné z něj odebírány
-% Pro jazyk C++ dokonce vznikla i hezká mapa těchto vlastností.
-\begin{frame}{Jazyk C++}
-%\pause
+% Modern programming languages are really powerful - but also
+% really complex. The specification of the C++ language alone
+% has circa 380 pages, and the language and its standard library
+% together has 1400 pages in total.
+% As the time goes, some features are being added to the language,
+% other are being removed. For the C++ language there is
+% a nice map of the features. It looks like this.
+\begin{frame}{The C++ lands}
+\pause
 \includegraphics[trim=100 900 1700 300, clip, width=1.0\linewidth]{img/cppmap.png}
 %TODO link
 \end{frame}
 
-%(Celá mapa je zde.)
-\begin{frame}{Jazyk C++}
+% And this is the full map
+\begin{frame}{The C++ lands (full)}
 \includegraphics[width=1.0\linewidth]{img/cppmap.png}
 \end{frame}
 
-% posud cca 1 minuta
 
-% Jazyk C++ je komplexní, a my - programátoři - děláme chyby. I proto máme spoustu nástrojů,
-% které nám pomáhají chyby odhalovat, či naopak prokazovat jejich absenci.
-% V kontextu jazyků C a C++ mohu zmínit třeba (můj oblíbený) nástroj Frama-C.
-%
-% Nicměně důležitá otázka je: rozumí tyto nástroje jazykům C či C++ správně?
-% Není tomu tak vždy. Třeba před dvěma lety se ukázalo, že 14% programů,
-% které byly použity v soutěži verifikačních nástrojů SV-COMP, je z hlediska
-% standardu nedefinovaných - a tedy se (podle definice ze standardu) mohou chovat
-% libovolně. Tedy každý nástroj, který o takovém programu řekl, že je korektní,
-% což byla z hlediska soutěže správná odpověd, vlastně jazyku nerozumí správně.
-%
+% 2 min
+
+
+% The C++ language is complex and we
+% - the programmers - make mistakes.
+% Therefore we have a plenty of tools which help as to find
+% bugs in our programs, or to prove their absence from the code.
+% The last two tools in the list are being actively developed
+% here on Faculty on Informatics.
+
+% The tools can give programmers a valuable information.
+% For example, that their program contains an error.
+% Or that some code is suspicious, and it could be an error.
+% Or they can say that the program is error-free.
+\begin{frame}{The complexity of C/C++}
+\begin{columns}
+
+\begin{column}{0.5\textwidth}
+Some of the tools:
+\begin{itemize}
+\pause \item clang-tidy
+\pause \item frama-c
+\pause \item cbmc
+\pause \item divine
+\pause \item symbiotic
+\end{itemize}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\pause
+Possible outputs:
+\begin{itemize}
+\pause \item error
+\pause \item suspicious code, possible error
+\pause \item correct
+\pause \item unknown
+\end{itemize}
+\end{column}
+
+\end{columns}
+\end{frame}
+
+% This, however, leads to some important questions.
+% Are they correctly implemented?
+% Do these tools understand the C++ language correctly?
+
+% There is a competetion of verification tools, called SV-COMP.
+% In this competetion, there are two set of C programs:
+% a set of correct programs, and a set of incorrect programs.
+% However, two years ago it was discovered that some of the programs
+% in the 'correct' set are actually incorrect (they contain
+% an undefined behaviour). So the tools that classify such programs
+% as correct gain some points in the competetion, but actually
+% they contain an error - they do not understand the C language
+% correctly.
+\begin{frame}{Some disturbing questions}
+
+\begin{itemize}
+\pause \item Are they correctly implemented?
+\pause \item Do they really ,,understand'' C++?
+\pause \item SV-COMP: programs containing undefined behaviour in the set of correct ones\footnote[frame]{https://runtimeverification.com/blog/?p=200}
+\end{itemize}
+
+\end{frame}
+
+
 % Jeden z možných přístupů, jak mohou nástroje rozumět programovacímu jazyku,
 % je delegovat toto porozumění na překladač. Překladač přeloží program v C/C++
 % do nízkoúrovňového jazyka (třeba do assembleru) a nástroj už musí rozumět
 % jen tomuto nízkoúrovňovému jazyku. V posledních letech je hodně populární
 % platforma překladačů llvm spolu s jejím C/C++ frontendem, který se jmenuje Clang.
-
 % Tento přístup volí například Divine, Klee, a Symbiotic.
+
+\begin{frame}{Solution no. 1 - use a compiler}
+Use a translator from the desired language to some simpler language.
+
+E.g. a compiler (clang/llvm). This way the tool does not have to understand the complex C++ language, because the compiler understands it.
+
+\end{frame}
+
+
+
 % Osobně vidím dvě nevýhody tohoto přístupu: za prvé, nelze takto ověřit korektnost programu
 % vzhledem k programovacímu jazyku; a za druhé, verifikace některých vysokoúrovňových vlastností
 % a konstrukcí se stává téměř, ne-li úplně, nemožná.
 
-% Jiným přístupem je mít samostatnou, spustitelnou formální sémantiku daného jazyka.
 
-% 2 min
+\begin{frame}{Limitations}
 
-\begin{frame}{Komplexita C/C++}
 \begin{itemize}
-\pause \item nástroje: clang-tidy, frama-c, cbmc, divine, symbiotic
-\pause \item ,,Rozumí'' nástroje C++ správně?
-\pause \item SV-COMP: nedefinované programy v balíku korektních \footnote[frame]{https://runtimeverification.com/blog/?p=200}
-\pause \item možný přístup: delegovat porozumění jazyku na překladač (clang/llvm)
 \pause \item takto ale nelze ověřit korektnost programu vzhledem k jazyku
 \pause \item jak verifikovat šablony?
 \pause \item jiný přístup: samostatná formální sémantika
 \end{itemize}
+
+
+\end{frame}
+
+% Jiným přístupem je mít samostatnou, spustitelnou formální sémantiku daného jazyka.
+
+\begin{frame}{Solution no. 2 - have a formal semantics}
+
 \end{frame}
 
 
@@ -162,15 +250,15 @@
 % dva roky rozšiřována o podporu jazyka C++, které je zatím jen v experimentální fázi.
 \begin{frame}{C/C++ @ K}
 \begin{itemize}
-\item Již formalizováno: Python, JavaScript, C
-\pause \item využití C: RV-Match \\
+\item Already formalized: Python, JavaScript, C
+\pause \item Application of the C semantics: RV-Match \\
 \includegraphics[width=0.3\linewidth]{img/rvmatch.png}
-\pause \item experimentálně: C rozšiřováno o podporu C++
+\pause \item current work: extend the C semantics to C++
 \end{itemize}
 \end{frame}
 
 % Zadání, cíle, konkrétní věci, nalezené chyby apod.
-\section{Cíle práce}
+\section{Ms Thesis - The Results}
 
 
 % Cílem mé práce bylo rozšířit stávající prototyp
@@ -181,16 +269,6 @@
 % ale jen pro jazyk C. V jazyce C++ se výčtové typy chovají trošku jinak,
 % navíc ve standardu C++11 (z roku 2011) přibyla nová varianta těchto typů.
 
-
-% čas: 2min 15s
-%\begin{frame}{Cíle práce}
-%\begin{itemize}
-%\pause \item výčtové typy (\texttt{enum})
-%\pause \item vykonávání kódu v době překladu (\texttt{constexpr})
-%\pause \item nulová inicializace tříd
-%\pause \item oprava stávajících chyb v projektu
-%\end{itemize}
-%\end{frame}
 
 \begin{frame}[fragile]{Výčtové typy (\texttt{enum})}
 \begin{lstlisting}[language=C++]
@@ -266,7 +344,6 @@ assert(s2.x == 0); // fail
 \includegraphics[width=0.5\linewidth]{img/bug.jpg}
 \end{frame}
 
-\section{Výsledky \& co dál?}
 
 % Jak to dopadlo? Enumy jsou kompletně implementovány,
 % většina implementace je již nějakou dobu začleněna v upstreamu.
@@ -292,6 +369,9 @@ assert(s2.x == 0); // fail
 \end{itemize}
 \end{frame}
 
+\section{Future work}
+
+
 % Co teď? Je třeba začlenit hotové věci do upstreamu,
 % dokončit rozdělané vlastnosti a implementovat všechny ostatní,
 % které ještě nejsou - a je jich dost. Je také třeba vymyslet,
@@ -305,16 +385,17 @@ assert(s2.x == 0); // fail
 % (jak statické, tak dynamické). Verifikace kontraktů
 % u programů s vysokou úrovní abstrakce je vlastně ten důvod,
 % kvůli kterému jsem na sémantice jazyka C++ začal pracovat.
-\begin{frame}{Co dál?}
+\begin{frame}{Future of the semantics}
 \begin{itemize}
-\pause \item Vše hotové do upstreamu.
-\pause \item Dokončit \texttt{constexpr}.
-\pause \item Šablony, vlákna, bitová pole, fold expressions, \ldots
-\pause \item Jak řešit vývoj jazyka?
-\pause \item Spolupráce s RuntimeVerification inc.
-\pause \item Kontrakty.
+\pause \item Merge the rest to upstream.
+\pause \item Finalize \texttt{constexpr}.
+\pause \item Templates, threads, bit fields, fold expressions, \ldots
+\pause \item How to deal with language changes (C++14, 17, 20, \ldots) ?
+\pause \item An official contract with RuntimeVerification inc.
 \end{itemize}
 \end{frame}
+
+% TODO maybe: correctness of an implementation of an analysis
 
 % Rád bych tedy ve zbývajících dvou minutách ukázal,
 % jak si takové kontrakty představuji. Na slajdu vidíme
@@ -331,18 +412,20 @@ assert(s2.x == 0); // fail
 % prostředky jazyka C++, zejména s šablonami, funkcemi,
 % iterátory a jinými uživatelsky definovanými abstrakcemi.
 % Jak na to - uvidíme.
-\begin{frame}[fragile=singleslide]{Ochutnávka}
+\begin{frame}[fragile=singleslide]{Contracts on generics (C++ templates)}
 \begin{lstlisting}
 template <typename It>
 bool is_sorted(It begin, It end);
 
-/*
- * \pre valid_range(begin, end);
- * \post is_sorted(begin, end);
- */
 template <typename It>
-void sort(It begin, It end);
+bool valid_range(It begin, It end);
+
+template <typename It>
+void sort(It begin, It end)
+  [[ expects axiom: valid_range(begin, end) ]]
+  [[ ensures: is_sorted(begin, end) ]] ;
 \end{lstlisting}
+\pause This is the actual syntax proposed for C++20.
 \end{frame}
 
 
@@ -357,6 +440,10 @@ void sort(It begin, It end);
 \end{frame}
 
 
+\begin{frame}{Concepts and Contracts in C++20}
+
+\end{frame}
+
 \begin{frame}{Zdroje}
 \begin{itemize}
 \item Mapa C++ \url{https://fearlesscoder.blogspot.cz/2017/02/the-c17-lands.html}
@@ -368,7 +455,7 @@ K diagram \url{http://fsl.cs.illinois.edu/index.php/From\_Rewriting\_Logic,\_to\
 
 \backupbegin
 
-\section{Bonusy}
+\section{Bonus for C++ folks}
 
 
 % Tohle bych mohl mozna presunout do bonusu.
