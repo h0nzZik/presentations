@@ -12,6 +12,11 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{pgf}
+\usepackage{tikz}
+
+\usetikzlibrary{arrows,automata,positioning}
+
 \author{Jan Tušil}
 \title{Formal Semantics of C++ language? Why?}
 %\setbeamercovered{transparent} 
@@ -41,21 +46,15 @@
 
 % Phase 1: Attention
 % If I go first:
-% Good morning everyone. It is a prleasant surprise that there are
+% Good morning everyone. It is a pleasant surprise that there are
 % so many of us in such an early hour. Did you sleep well?
 % I hope you did, so you will not fall asleap now.
 % If I go second:
 % Good morning everyone. I hope you are enjoing the presentations
 % as much as I do. Now you are hopefuly woke up enough not to fall asleap
-% during my talk.
+% during my talk. The talk is about the project of
+% defining formal semantics of C++.
 
-% Phase 2: Benefit
-% My name is Honza Tušil. I could have named the talk 'Formal semantics of C++ and why you should care'.
-% 
-
-%My name is Honza Tušil
-% Dobrý den, já jsem Honza Tušil a rád bych vám představil svoji diplomovou práci, 
-% ve které jsem se zabýval vytvářením spustitelné formální sémantiky pro jazyk C++.
 \begin{frame}
 \titlepage
 \end{frame}
@@ -103,8 +102,8 @@
   \end{frame}
 }
 
-%\section{The Context}
-\section{Why bother?}
+\section{The Context}
+%\section{Why bother?}
 
 % Modern programming languages are really powerful - but also
 % really complex. The specification of the C++ language alone
@@ -171,8 +170,8 @@ Possible outputs:
 % Are they correctly implemented?
 % Do these tools understand the C++ language correctly?
 
-% There is a competetion of verification tools, called SV-COMP.
-% In this competetion, there are two set of C programs:
+% There exists a competetion of verification tools, called SV-COMP.
+% In this competetion, two set of C programs are used:
 % a set of correct programs, and a set of incorrect programs.
 % However, two years ago it was discovered that some of the programs
 % in the 'correct' set are actually incorrect (they contain
@@ -185,23 +184,45 @@ Possible outputs:
 \begin{itemize}
 \pause \item Are they correctly implemented?
 \pause \item Do they really ,,understand'' C++?
-\pause \item SV-COMP: programs containing undefined behaviour in the set of correct ones\footnote[frame]{https://runtimeverification.com/blog/?p=200}
+\pause \item SV-COMP: programs containing undefined behavior in the set of correct ones\footnote[frame]{\uncover<4->{https://runtimeverification.com/blog/?p=200}}
 \end{itemize}
 
 \end{frame}
 
 
-% Jeden z možných přístupů, jak mohou nástroje rozumět programovacímu jazyku,
-% je delegovat toto porozumění na překladač. Překladač přeloží program v C/C++
-% do nízkoúrovňového jazyka (třeba do assembleru) a nástroj už musí rozumět
-% jen tomuto nízkoúrovňovému jazyku. V posledních letech je hodně populární
-% platforma překladačů llvm spolu s jejím C/C++ frontendem, který se jmenuje Clang.
-% Tento přístup volí například Divine, Klee, a Symbiotic.
-
+% One possible solution to this problem is to use
+% a translator from the desired language to some simpler language.
+% A natural choice is to use a compiler. Many tools,
+% including Divine, Klee, and Symbiotic,
+% use a compiler called 'Clang' to translate the source code
+% to a program in so-called LLVM Intermediate Representation.
+%
+% TODO: an image
 \begin{frame}{Solution no. 1 - use a compiler}
-Use a translator from the desired language to some simpler language.
+%Use a translator from the desired language to some simpler language.
 
-E.g. a compiler (clang/llvm). This way the tool does not have to understand the complex C++ language, because the compiler understands it.
+\begin{tikzpicture}[
+%data/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+data/.style={rectangle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+tool/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
+]
+%Nodes
+\node[data]        (source)                           {C/C++ code};
+\node[tool]      (compiler)     [right=of source]   {Clang};
+\node[data]        (bitcode)      [right=of compiler] {LLVM bitcode};
+\node[tool]      (verifier)     [below=of bitcode]  {Verifier};
+\node[data]        (answer)       [left=of verifier]  {Correct/Error};
+ 
+%Lines
+\draw[->] (source.east) -- (compiler.west);
+\draw[->] (compiler.east) -- (bitcode.west);
+\draw[->] (bitcode.south) -- (verifier.north);
+\draw[->] (verifier.west) -- (answer.east);
+%\draw[->] (maintopic.east) -- (rightsquare.west);
+%\draw[->] (rightsquare.south) .. controls +(down:7mm) and +(right:7mm) .. (lowercircle.east);
+\end{tikzpicture}
+
+%E.g. a compiler (clang/llvm). This way the tool does not have to understand the complex C++ language, because the compiler understands it.
 
 \end{frame}
 
@@ -211,43 +232,65 @@ E.g. a compiler (clang/llvm). This way the tool does not have to understand the 
 % vzhledem k programovacímu jazyku; a za druhé, verifikace některých vysokoúrovňových vlastností
 % a konstrukcí se stává téměř, ne-li úplně, nemožná.
 
+% I can see two disadvantages of this approach. First,
+% it is not clear how to verify the correctness with respect to the programming language,
+% because during the translation, some undefined behavior may become defined.
+\begin{frame}[fragile]{Limitations}
+\begin{columns}
 
-\begin{frame}{Limitations}
+\begin{column}{0.45\textwidth}
+\pause
+An undefined behavior may become defined.
+\pause
+\begin{lstlisting}
+int x = INT_MAX;
+x++;
+\end{lstlisting}
+\end{column}
 
-\begin{itemize}
-\pause \item takto ale nelze ověřit korektnost programu vzhledem k jazyku
-\pause \item jak verifikovat šablony?
-\pause \item jiný přístup: samostatná formální sémantika
-\end{itemize}
+\begin{column}{0.55\textwidth}
+\pause
+Template-based polymorphic code.
+\pause
+\begin{lstlisting}
+template <typename It>
+void sort(It begin, It end);
+\end{lstlisting}
+\end{column}
 
-
+\end{columns}
 \end{frame}
 
-% Jiným přístupem je mít samostatnou, spustitelnou formální sémantiku daného jazyka.
 
+% A different approach is to have an executable formal semantics
+% of given language, and derive everything else from that.
+% This is implemented in a framework called "K".
+% In the framework, one can define tools and languages independently,
+% and then instantiate any desired tool with a desired language.
+% The set of tools may include a parser, an interpreter,
+% a compiler, a model checker, test case generator,
+% a symbolic executor...
+% Some of them are already programmed.
 \begin{frame}{Solution no. 2 - have a formal semantics}
+\pause
+$$ \left( W, R \right) \textbf{ where } R \subseteq W \times W $$
+\begin{columns}
 
-\end{frame}
+\begin{column}{0.5\textwidth}
+\end{column}
 
-
-% Právě k popisu formální sémantiky programovacího jazyka slouží
-% framework zvaný "K". Tento framework umožňuje dát jazyku
-% small-step operační sémantiku, založenou na přepisování termů.
-% Nástroje jako parser, interpreter, či model checker
-% je možné pomocí tohoto frameworku naprogramovat obecně, nezávisle
-% na syntaxi a sémantice konkrétního jazyka.
-% Zrovna tyto zmiňované nástroje jsou již naprogramovány a je možné je téměř automaticky instanciovat
-% pro libovolný jazyk, pro který je v K napsaná sémantika.
-% 
-
-\begin{frame}{K Framework}
+\begin{column}{0.5\textwidth}
+\pause
 \includegraphics[width=1.0\linewidth]{img/kidea.png}
+\end{column}
+
+\end{columns}
 \end{frame}
 
-% V K již byla popsána sémantika Pythonu, JavaScriptu, C, a dalších jazyků.
-% Nad sémantikou jazyka C byl postaven komerční nástroj pro detekci
-% nedefinovaného chování RV-Match a tato sémantika je poslední
-% dva roky rozšiřována o podporu jazyka C++, které je zatím jen v experimentální fázi.
+% Several laanguages were already formalized in K, including Python,
+% JavaScript and C. The semantics of C was used to build a commercial
+% tool RV-Match for discovering of undefined behavior.
+% Nowadays the semantics is being extended with the support of C++.
 \begin{frame}{C/C++ @ K}
 \begin{itemize}
 \item Already formalized: Python, JavaScript, C
@@ -260,17 +303,27 @@ E.g. a compiler (clang/llvm). This way the tool does not have to understand the 
 % Zadání, cíle, konkrétní věci, nalezené chyby apod.
 \section{Ms Thesis - The Results}
 
+% In my MS Thesis I worked on parts of the formal C++ semantics.
+% My results are:
+\begin{frame}{Results of my Ms Thesis}
+Implemented:
+\begin{itemize}
+\pause \item enumerations
+\pause \item zero initialization of class types
+\pause \item compile-time function evaluation (a proof of concept)
+\end{itemize}
+\pause
+Found bugs in:
+\begin{itemize}
+\pause \item GCC (1 bug)
+\pause \item CLang (1 bug)
+\pause \item The C++ standard (1 defect)
+\end{itemize}
+\end{frame}
 
-% Cílem mé práce bylo rozšířit stávající prototyp
-% C++ sémantiky v K o dosud neimplementované vlastnosti tohoto jazyka.
 
-% První vlastností, kterou jsem zamýšlel implementovat,
-% jsou výčtové typy. V projektu sice výčtové typy byly implementovány,
-% ale jen pro jazyk C. V jazyce C++ se výčtové typy chovají trošku jinak,
-% navíc ve standardu C++11 (z roku 2011) přibyla nová varianta těchto typů.
-
-
-\begin{frame}[fragile]{Výčtové typy (\texttt{enum})}
+% This is how enums look in C++11
+\begin{frame}[fragile]{C++11 \texttt{enum}s}
 \begin{lstlisting}[language=C++]
 enum E0 { A = 5, B = A + 3 };
 enum E1 : char;
@@ -281,18 +334,12 @@ std::underlying_type_t<E5> x = 5;
 \end{lstlisting}
 \end{frame}
 
-
-
-% Další vlastností, kterou jsem chtěl implementovat, byla podpora vykonávání kódu
-% v době překladu. Od standardu C++11 je možné označit některou z funkcí
-% jako 'constexpr', což v praxi znamená, že volání takovéto funkce je možné
-% vyhodnotit již v době překladu. Výpočet pak není nutné dělat za běhu,
-% což může výrazně pomoci jak výkonu programu, tak čitelnosti jeho kódu.
-% Výsledek výpočtu je navíc možné použít i na místech, kde jazyk vyžaduje použití konstanty.
-% A ano - jazyk C++ je díky této vlastnosti turingovsky úplný už v době překladu.
-% Jenže on byl turingovsky úplný již dávno předtím.
-
-\begin{frame}[fragile]{Vykonávání kódu v době překladu (\texttt{constexpr})}
+% In C++, some classes of functions can be evaluated in compile time.
+% As the standard evolves, there are less and less restrictions.
+% Recursion, cycles in code is not a problem.
+% The result of a function evaluated in compile time
+% can be used anywhere a compile-time constant is needed.
+\begin{frame}[fragile]{Compile time function evaluation}
 \begin{lstlisting}
 constexpr int fact(int n) {
 	return n <= 1 ? 1 : n * fact(n - 1);
@@ -317,7 +364,11 @@ int main() {
 % když jsem se pokoušel nulovou inicializaci naimplementovat. Chybou byl
 % nedeterminismus v sémantice, který umožňoval interpretovat některé programy vícero způsoby.
 
-\begin{frame}[fragile]{Nulová inicializace tříd}
+% There is one rather technical thing I implemented.
+% It is a rather tricky thing, but, roughly speaking,
+% the point is that when initializing a variable of a class type,
+% under some cicrumstances its members get initialized to zero.
+\begin{frame}[fragile]{Zero initialization of class types}
 \begin{lstlisting}
 struct S {
 	virtual ~S() = default;
@@ -331,69 +382,43 @@ assert(s2.x == 0); // fail
 \end{lstlisting}
 \end{frame}
 
-% Tím se dostáváme k poslednímu bodu - opravě některých stávajících chyb.
+%% Tím se dostáváme k poslednímu bodu - opravě některých stávajících chyb.
+%
+%% Projekt C++ sémantiky v K je stále v experimentální fázi,
+%% a tak se při práci častokrát stalo, že jsem narázil
+%% na nějakou chybu či nedokončenou implementaci. Opravoval jsem zejména
+%% ty, které mi nějak překážely.
+%
+%% Ještě doplním, že z těchto čtyř bodů byly jen první dva
+%% součástí mého oficiální zadání.
+%\begin{frame}{Oprava stávajících chyb v projektu}
+%\includegraphics[width=0.5\linewidth]{img/bug.jpg}
+%\end{frame}
 
-% Projekt C++ sémantiky v K je stále v experimentální fázi,
-% a tak se při práci častokrát stalo, že jsem narázil
-% na nějakou chybu či nedokončenou implementaci. Opravoval jsem zejména
-% ty, které mi nějak překážely.
-
-% Ještě doplním, že z těchto čtyř bodů byly jen první dva
-% součástí mého oficiální zadání.
-\begin{frame}{Oprava stávajících chyb v projektu}
-\includegraphics[width=0.5\linewidth]{img/bug.jpg}
-\end{frame}
-
-
-% Jak to dopadlo? Enumy jsou kompletně implementovány,
-% většina implementace je již nějakou dobu začleněna v upstreamu.
-% Vyhodnocování funkcí v době překladu - aka constexpr -
-% je dost komplexní vlastnost, a její hezká implementace
-% vyžaduje hluboké zásahy do projektu. Vytvořil jsem prototyp,
-% který implementuje ty koncepčně náročné aspekty této vlastnosti (včetně rekurze apod).
-% Není ale zatím připravený pro začlenění.
-% Nulová inicializace je hotova, nicméně před začleněním do upstreamu
-% musí být ještě opravana jedna s ní související chyba.
-% Když jsme u chyb - pár jsem jich opravil, některé jsou již začleněny,
-% jiné mám v úmyslu začlenit do upstreamu později.
-% Jako bonus jsem objevil nějaké chyby v jiných projektech
-% - jednu v překladači GCC, jednu v Clang a jednu v samotném standardu jazyka C++.
-% Chyby u překladačů jsem pochopilteně nahlásil, s chybou ve standardu to je trochu složitější.
-\begin{frame}{Výsledky}
-\begin{itemize}
-\pause \item \texttt{enum} - vše hotovo, většina je v upstream
-\pause \item \texttt{constexpr} - elegantní proof of concept
-\pause \item nulová inicializace - hotovo
-\pause \item opravy chyb - některé přijaty do upstreamu
-\pause \item nalezené chyby v GCC, Clang, standardu C++
-\end{itemize}
-\end{frame}
 
 \section{Future work}
 
-
-% Co teď? Je třeba začlenit hotové věci do upstreamu,
-% dokončit rozdělané vlastnosti a implementovat všechny ostatní,
-% které ještě nejsou - a je jich dost. Je také třeba vymyslet,
-% jak budeme v projektu řešit vývoj jazyka - jestli budeme třeba podporovat
-% nějaké přepínače pro výběr standardu, nebo raději pojedeme vždy podle nejnovější verze.
-% Mám v úmyslu ve vývoji sémantiky pokračovat, jsem dohodnutý s firmou RuntimeVerification inc
-% (která má nad C sémantikou postavený onen nástroj RV-match, který jsem zmiňoval
-% na začátku prezentace) na tom, že vývoj finančně podpoří.
-%
-% Kromě toho bych rád implementoval podporu kontraktů a jejich verifikace
-% (jak statické, tak dynamické). Verifikace kontraktů
-% u programů s vysokou úrovní abstrakce je vlastně ten důvod,
-% kvůli kterému jsem na sémantice jazyka C++ začal pracovat.
+% So what now?
+% There are still a few things
+% which need to be merged into upstream.
+% The support for compile time function evaluation
+% needs to be finished, and also many other C++ features.
+% On this I am cooperating with a company RuntimeVerification inc.
 \begin{frame}{Future of the semantics}
 \begin{itemize}
 \pause \item Merge the rest to upstream.
 \pause \item Finalize \texttt{constexpr}.
 \pause \item Templates, threads, bit fields, fold expressions, \ldots
 \pause \item How to deal with language changes (C++14, 17, 20, \ldots) ?
-\pause \item An official contract with RuntimeVerification inc.
+\pause \item A cooperation with RuntimeVerification inc.
 \end{itemize}
 \end{frame}
+
+
+% Kromě toho bych rád implementoval podporu kontraktů a jejich verifikace
+% (jak statické, tak dynamické). Verifikace kontraktů
+% u programů s vysokou úrovní abstrakce je vlastně ten důvod,
+% kvůli kterému jsem na sémantice jazyka C++ začal pracovat.
 
 % TODO maybe: correctness of an implementation of an analysis
 
@@ -412,13 +437,31 @@ assert(s2.x == 0); // fail
 % prostředky jazyka C++, zejména s šablonami, funkcemi,
 % iterátory a jinými uživatelsky definovanými abstrakcemi.
 % Jak na to - uvidíme.
+
+% One thing I would like to do in future
+% is verification of generic code which uses template polymorphism.
+% For example, there is a generic function 'sort',
+% which can be given a range of an arbitrary type,
+% and it sorts the range. The behaviour of this function
+% is specified with use of Contracts, which is a feature
+% which will probably be standardized in C++20.
+% Here the function expects that the given pair of iterators
+% form a range, and it ensures that when it finishes,
+% the range is sorted. One interesting thing here
+% is that the contract can be given in terms of
+% ordinary C++ functions - in this case, 'valid_range' and 'is_sorted'.
+% Even more interesting thing is that valid_range does not return a bool,
+% but just 'void' - a type with only one value.
+% One mor thing: when the function valid_range is undefined
+% on a given input, it means that the expectation of 'sort'
+% is not met, so it does not have to sort the range.
 \begin{frame}[fragile=singleslide]{Contracts on generics (C++ templates)}
 \begin{lstlisting}
 template <typename It>
 bool is_sorted(It begin, It end);
 
 template <typename It>
-bool valid_range(It begin, It end);
+void valid_range(It begin, It end);
 
 template <typename It>
 void sort(It begin, It end)
@@ -429,33 +472,32 @@ void sort(It begin, It end)
 \end{frame}
 
 
-\begin{frame}{Kontrakty}
+\begin{frame}{Contracts}
 \begin{itemize}
-\pause \item Jak jim dát sémantiku?
-\pause \item Volání běžných funkcí v pre/postcondition.
-\pause \item A co když mají efekty? A co když ty jsou ohraničené?
-\pause \item Jak je verifikovat?
-\pause \item Jak využít existující abstrakce? A vzory?
+\pause \item What do they mean?
+\pause \item Can we evaluate effectful functions in pre/postcondition?
+\pause \item How to verify them?
+\pause \item How to use existing abstractions and patterns?
+\pause \item Can we use the Concepts from C++20?
 \end{itemize}
 \end{frame}
 
-
-\begin{frame}{Concepts and Contracts in C++20}
-
-\end{frame}
-
-\begin{frame}{Zdroje}
+\begin{frame}{Sources}
 \begin{itemize}
-\item Mapa C++ \url{https://fearlesscoder.blogspot.cz/2017/02/the-c17-lands.html}
-K diagram \url{http://fsl.cs.illinois.edu/index.php/From\_Rewriting\_Logic,\_to\_Programming\_Language\_Semantics,\_to\_Program\_Verification} \\
-\item RV-Match logo \url{https://runtimeverification.com/match/}
-\item Brouk \url{http://cliparting.com/free-bug-clipart-30526/}
+
+\item The C++ map \url{https://fearlesscoder.blogspot.cz/2017/02/the-c17-lands.html}
+The diagram of K \url{http://fsl.cs.illinois.edu/index.php/From\_Rewriting\_Logic,\_to\_Programming\_Language\_Semantics,\_to\_Program\_Verification} \\
+
+\item RV-Match \url{https://runtimeverification.com/match/}
+
+%\item Brouk \url{http://cliparting.com/free-bug-clipart-30526/}
+
 \end{itemize}
 \end{frame}
 
 \backupbegin
 
-\section{Bonus for C++ folks}
+\section{A Bonus for C++ Folks}
 
 
 % Tohle bych mohl mozna presunout do bonusu.
@@ -471,7 +513,7 @@ K diagram \url{http://fsl.cs.illinois.edu/index.php/From\_Rewriting\_Logic,\_to\
 % Kód na slajdu je platný C++ kód, a Clang nebo MSVC jej bez problémů zkompilují,
 % nicméně GCC jej odmítne zparsovat. Chybu jsem nahlásil do bugzilly projektu
 % a jeden z hlavních vývojářů ji potvrdil.
-\begin{frame}[fragile=singleslide]{GCC bug}
+\begin{frame}[fragile=singleslide]{The bug in GCC}
 \begin{lstlisting}
 enum E : int;
 enum ::E : int{};
@@ -486,7 +528,7 @@ enum ::E : int{};
 % C++ frontendu tohoto překladače, se příčina této chyby projevuje
 % i v jiných případech, ve kterých nemá vliv na korektnost, ale jen
 % na výkon překladače.
-\begin{frame}[fragile=singleslide]{Clang bug}
+\begin{frame}[fragile=singleslide]{The bug in Clang}
 \begin{lstlisting}
 namespace N { enum E : int; }
 enum N::E : int {A,B};
@@ -498,7 +540,7 @@ int z = int(A); // 3
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile=singleslide]{C++ standard bug}
+\begin{frame}[fragile=singleslide]{The bug in C++ standard}
 \begin{lstlisting}
 enum class E {
     A,
@@ -507,11 +549,6 @@ enum class E {
 \end{lstlisting}
 Jaký typ má \lstinline|E::A| v (1)?
 \end{frame}
-
-% Btw v C++ sémantice stále ještě není implementován switch.
-% Po otázkách - kdyby chtěli vědět něco dalšího, rád si s nima popovídám.
-% Co jsem se naučil: komunikace na dálku je fuška.
-% S lidma z RV a UIUC se mi spolupracovalo dobře.
 
 \backupend
 
