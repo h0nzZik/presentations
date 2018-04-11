@@ -90,14 +90,14 @@
 % is my Master thesis to this, and finally I am going to
 % show the future work I would like to do.
 
-\begin{frame}{The structure}
+\begin{frame}{The Structure}
 \tableofcontents
 \end{frame}
 
 \AtBeginSection[]
 {
   \begin{frame}
-    \frametitle{Osnova}
+    \frametitle{The Structure}
     \tableofcontents[currentsection]
   \end{frame}
 }
@@ -112,15 +112,21 @@
 % As the time goes, some features are being added to the language,
 % other are being removed. For the C++ language there is
 % a nice map of the features. It looks like this.
-\begin{frame}{The C++ lands}
-\pause
-\includegraphics[trim=100 900 1700 300, clip, width=1.0\linewidth]{img/cppmap.png}
-%TODO link
-\end{frame}
+%\begin{frame}{The C++ lands}
+%\pause
+%\includegraphics[trim=100 900 1700 300, clip, width=1.0\linewidth]{img/cppmap.png}
+%\end{frame}
+    
+{
+  \usebackgroundtemplate{\includegraphics[trim=100 900 1700 300, clip, height=\paperheight,width=\paperwidth]{img/cppmap.png}}
+  \setbeamertemplate{navigation symbols}{}
+  \begin{frame}[plain]
+  \end{frame}
+}
 
 % And this is the full map
-\begin{frame}{The C++ lands (full)}
-\includegraphics[width=1.0\linewidth]{img/cppmap.png}
+\begin{frame}{The C++ lands}
+\includegraphics[width=0.9\linewidth]{img/cppmap.png}
 \end{frame}
 
 
@@ -218,8 +224,6 @@ tool/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
 \draw[->] (compiler.east) -- (bitcode.west);
 \draw[->] (bitcode.south) -- (verifier.north);
 \draw[->] (verifier.west) -- (answer.east);
-%\draw[->] (maintopic.east) -- (rightsquare.west);
-%\draw[->] (rightsquare.south) .. controls +(down:7mm) and +(right:7mm) .. (lowercircle.east);
 \end{tikzpicture}
 
 %E.g. a compiler (clang/llvm). This way the tool does not have to understand the complex C++ language, because the compiler understands it.
@@ -227,14 +231,12 @@ tool/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
 \end{frame}
 
 
-
-% Osobně vidím dvě nevýhody tohoto přístupu: za prvé, nelze takto ověřit korektnost programu
-% vzhledem k programovacímu jazyku; a za druhé, verifikace některých vysokoúrovňových vlastností
-% a konstrukcí se stává téměř, ne-li úplně, nemožná.
-
 % I can see two disadvantages of this approach. First,
 % it is not clear how to verify the correctness with respect to the programming language,
 % because during the translation, some undefined behavior may become defined.
+% And second - on the level of simpler language we might not be able to express
+% some higher-level properties of the program. And therefore we are not able to prove
+% or disprove them.
 \begin{frame}[fragile]{Limitations}
 \begin{columns}
 
@@ -272,19 +274,35 @@ void sort(It begin, It end);
 % a symbolic executor...
 % Some of them are already programmed.
 \begin{frame}{Solution no. 2 - have a formal semantics}
+
+\begin{center}
+
 \pause
-$$ \left( W, R \right) \textbf{ where } R \subseteq W \times W $$
-\begin{columns}
+$$ \left( W, R \right) \textbf{ where } W = \left( \textsc{Program}, \textsc{Store} \right) \textbf{ and } R \subseteq W \times W $$
 
-\begin{column}{0.5\textwidth}
-\end{column}
-
-\begin{column}{0.5\textwidth}
 \pause
-\includegraphics[width=1.0\linewidth]{img/kidea.png}
-\end{column}
+\begin{tikzpicture}[
+%data/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+state/.style={rectangle, draw=green!80, fill=green!5, very thick, minimum size=7mm},
+]
+%Nodes
+\node[state]   (st2)                           { < \textbf{skip} , $x \mapsto 3$ > };
+\node[state]   (st0)      [above left=of st2]  { < \textbf{x := 3} , $x \mapsto 0$ > };
+\node[state]   (st1)      [below left=of st2]  { < \textbf{x++} , $x \mapsto 2$ > };
+ 
+%Lines
+\draw[->] (st0.east) -- (st2.north);
+\draw[->] (st1.east) -- (st2.south);
+\end{tikzpicture}
 
-\end{columns}
+\end{center}
+
+\end{frame}
+
+\begin{frame}{K Framework}
+\begin{center}
+\includegraphics[width=0.7\linewidth]{img/kidea.png}
+\end{center}
 \end{frame}
 
 % Several laanguages were already formalized in K, including Python,
@@ -300,12 +318,11 @@ $$ \left( W, R \right) \textbf{ where } R \subseteq W \times W $$
 \end{itemize}
 \end{frame}
 
-% Zadání, cíle, konkrétní věci, nalezené chyby apod.
-\section{Ms Thesis - The Results}
+\section{Ms Thesis}
 
 % In my MS Thesis I worked on parts of the formal C++ semantics.
 % My results are:
-\begin{frame}{Results of my Ms Thesis}
+\begin{frame}{My Ms Thesis}
 Implemented:
 \begin{itemize}
 \pause \item enumerations
@@ -547,7 +564,7 @@ enum class E {
     B = E::A // 1
 };
 \end{lstlisting}
-Jaký typ má \lstinline|E::A| v (1)?
+What is the type of \lstinline|E::A| in (1)?
 \end{frame}
 
 \backupend
